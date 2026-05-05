@@ -1,0 +1,25 @@
+[gd_scene format=3 uid="uid://bjxq6qeucgwg2"]
+
+[ext_resource type="Script" uid="uid://sve0lqjf648a" path="res://scenes/enemies/enemy_base.gd" id="1_qty17"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rbebl"]
+albedo_color = Color(0.17596108, 0.3234396, 0.679836, 1)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_qty17"]
+material = SubResource("StandardMaterial3D_rbebl")
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_pkqou"]
+
+[node name="enemy" type="CharacterBody3D" unique_id=1477360822]
+script = ExtResource("1_qty17")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=364973635]
+mesh = SubResource("CapsuleMesh_qty17")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1926518323]
+shape = SubResource("CapsuleShape3D_pkqou")
+
+[node name="AttackTimer" type="Timer" parent="." unique_id=379150249]
+autostart = true
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="." unique_id=1566223600]

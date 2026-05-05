@@ -1,7 +1,14 @@
 extends CharacterBody3D
 
+signal health_changed(new_health: int)
 
 const SPEED = 5.0
+
+@export var max_health: int = 100
+var health: int
+
+func _ready() -> void:
+	health = max_health
 
 func _aim_at_mouse() -> void:
 	var camera := get_viewport().get_camera_3d()
@@ -21,7 +28,6 @@ func _physics_process(delta: float) -> void:
 		velocity += get_gravity() * delta
 
 	# Get the input direction and handle the movement/deceleration.
-	# As good practice, you should replace UI actions with custom gameplay actions.
 	var input_dir := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
 	var direction := Vector3(input_dir.x, 0, input_dir.y).normalized()
 	if direction:
@@ -33,3 +39,14 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 	_aim_at_mouse()
+
+func take_damage(amount: int) -> void:
+	health -= amount
+	health_changed.emit(health)
+	print("Player hit! Health: ", health)
+	if health <= 0:
+		die()
+
+func die() -> void:
+	print("Player died!")
+	get_tree().reload_current_scene()

@@ -2,6 +2,12 @@
 
 [ext_resource type="PackedScene" uid="uid://cwug103slc8ve" path="res://scenes/player/player.tscn" id="1_2i8n1"]
 [ext_resource type="Script" uid="uid://cfxsrnu5h2vtg" path="res://scenes/world/camera.gd" id="1_50lg6"]
+[ext_resource type="PackedScene" uid="uid://bjxq6qeucgwg2" path="res://scenes/enemies/enemy_base.tscn" id="3_01o1s"]
+[ext_resource type="Script" uid="uid://bqc4j3jefbtqb" path="res://scenes/world/hud.gd" id="4_dbnql"]
+
+[sub_resource type="NavigationMesh" id="NavigationMesh_01o1s"]
+vertices = PackedVector3Array(-19.5, 0.5, -19.5, -19.5, 0.5, 19.5, 19.5, 0.5, 19.5, 19.5, 0.5, -19.5)
+polygons = [PackedInt32Array(3, 2, 0), PackedInt32Array(0, 2, 1)]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_d32vy"]
 
@@ -9,18 +15,38 @@
 
 [node name="MainWorld" type="Node3D" unique_id=2117265270]
 
-[node name="Ground" type="StaticBody3D" parent="." unique_id=1928188511]
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground" unique_id=1303621748]
-transform = Transform3D(20, 0, 0, 0, 20, 0, 0, 0, 20, 0, 0, 0)
-mesh = SubResource("PlaneMesh_d32vy")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground" unique_id=1876065000]
-shape = SubResource("WorldBoundaryShape3D_2i8n1")
-
 [node name="camera" type="Camera3D" parent="." unique_id=889325677]
 transform = Transform3D(1, 0, 0, 0, 0.49999997, 0.86602545, 0, -0.86602545, 0.49999997, 0, 16, 8)
 script = ExtResource("1_50lg6")
 
 [node name="Player" parent="." unique_id=378423886 instance=ExtResource("1_2i8n1")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="enemy" parent="." unique_id=1477360822 instance=ExtResource("3_01o1s")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1235533, 13.418313)
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=1039171969]
+navigation_mesh = SubResource("NavigationMesh_01o1s")
+
+[node name="Ground" type="StaticBody3D" parent="NavigationRegion3D" unique_id=1928188511]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="NavigationRegion3D/Ground" unique_id=1303621748]
+transform = Transform3D(20, 0, 0, 0, 20, 0, 0, 0, 20, 0, 0, 0)
+mesh = SubResource("PlaneMesh_d32vy")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NavigationRegion3D/Ground" unique_id=1876065000]
+shape = SubResource("WorldBoundaryShape3D_2i8n1")
+
+[node name="HUD" type="CanvasLayer" parent="." unique_id=1187547968]
+script = ExtResource("4_dbnql")
+
+[node name="HealthBar" type="ProgressBar" parent="HUD" unique_id=1081567971]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = -638.0
+offset_right = 210.0
+offset_bottom = -611.0
+grow_vertical = 0
+value = 100.0

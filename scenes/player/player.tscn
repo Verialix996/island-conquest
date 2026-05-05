@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://cwug103slc8ve"]
 
 [ext_resource type="Script" uid="uid://dvwerbtq0ttlf" path="res://scenes/player/player.gd" id="1_8afob"]
+[ext_resource type="PackedScene" uid="uid://cbse0ei1osbb0" path="res://scenes/weapons/weapon_base.tscn" id="2_dovo2"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_x7p2l"]
 albedo_color = Color(1, 0.101960786, 0.047058824, 1)
@@ -18,3 +19,5 @@ mesh = SubResource("CapsuleMesh_8afob")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=2067336665]
 shape = SubResource("CapsuleShape3D_dovo2")
+
+[node name="Weapon" parent="." unique_id=153327082 instance=ExtResource("2_dovo2")]
