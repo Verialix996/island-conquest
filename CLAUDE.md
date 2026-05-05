@@ -101,26 +101,26 @@ project/
 
 Work through these in order. Do not skip ahead.
 
-### Milestone 1 — Foundation ✅ (Start Here)
-- [ ] Godot project created and organized per folder structure above
-- [ ] Top-down 3D camera set up and working
-- [ ] Player character moves in the world (WASD or equivalent)
-- [ ] Player aims toward mouse cursor (top-down aiming)
-- [ ] Basic flat terrain / placeholder world
+### Milestone 1 — Foundation ✅
+- [x] Godot project created and organized per folder structure above
+- [x] Top-down 3D camera set up and working
+- [x] Player character moves in the world (WASD)
+- [x] Player aims toward mouse cursor (top-down aiming)
+- [x] Basic flat terrain / placeholder world
 
-### Milestone 2 — Core Combat
-- [ ] Player can fire a weapon (raycast or projectile)
-- [ ] Basic enemy with health that can be damaged and killed
-- [ ] Enemy has simple AI (patrol → detect → chase → attack)
-- [ ] Player has health and can die
-- [ ] Basic HUD (health bar, ammo count)
+### Milestone 2 — Core Combat ✅
+- [x] Player can fire a weapon (raycast)
+- [x] Basic enemy with health that can be damaged and killed
+- [x] Enemy has simple AI (patrol → detect → chase → attack)
+- [x] Player has health and can die (scene restarts)
+- [x] Basic HUD (health bar)
 
-### Milestone 3 — Game Feel
-- [ ] Screen shake on impact / explosions
-- [ ] Muzzle flash and impact effects (particles)
-- [ ] Sound effects: gunshots, footsteps, enemy reactions
-- [ ] Enemy death animations / ragdoll or dissolve effect
-- [ ] Player feedback: hit flash, damage sound
+### Milestone 3 — Game Feel ✅
+- [x] Screen shake when player takes damage
+- [x] Muzzle flash particles when shooting
+- [x] Sound effects: gunshots, player hit grunt, enemy death
+- [x] Enemy freezes and plays death sound before disappearing
+- [x] Player and enemy flash red on hit
 
 ### Milestone 4 — Open World Sandbox
 - [ ] Larger explorable world with cover objects

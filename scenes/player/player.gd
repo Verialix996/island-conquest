@@ -6,9 +6,13 @@ const SPEED = 5.0
 
 @export var max_health: int = 100
 var health: int
+var hit_sound: AudioStreamPlayer3D
+var mesh: MeshInstance3D
 
 func _ready() -> void:
 	health = max_health
+	hit_sound = $HitSound
+	mesh = $MeshInstance3D
 
 func _aim_at_mouse() -> void:
 	var camera := get_viewport().get_camera_3d()
@@ -43,9 +47,16 @@ func _physics_process(delta: float) -> void:
 func take_damage(amount: int) -> void:
 	health -= amount
 	health_changed.emit(health)
+	hit_sound.play()
+	_flash_red()
 	print("Player hit! Health: ", health)
 	if health <= 0:
 		die()
+
+func _flash_red() -> void:
+	mesh.get_active_material(0).albedo_color = Color.RED
+	await get_tree().create_timer(0.1).timeout
+	mesh.get_active_material(0).albedo_color = Color("357e00")
 
 func die() -> void:
 	print("Player died!")

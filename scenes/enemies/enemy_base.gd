@@ -9,10 +9,13 @@ enum State { PATROL, CHASE, ATTACK }
 @export var attack_damage: int = 10
 
 var health: int
+var is_dead: bool = false
 var state: State = State.PATROL
 var player: Node3D
 var nav_agent: NavigationAgent3D
 var attack_timer: Timer
+var death_sound: AudioStreamPlayer3D
+var mesh: MeshInstance3D
 
 func _ready() -> void:
 	health = max_health
@@ -20,6 +23,8 @@ func _ready() -> void:
 	nav_agent = $NavigationAgent3D
 	attack_timer = $AttackTimer
 	attack_timer.timeout.connect(_on_attack_timer_timeout)
+	death_sound = $DeathSound
+	mesh = $MeshInstance3D
 
 func _physics_process(_delta: float) -> void:
 	if player == null:
@@ -52,11 +57,24 @@ func _on_attack_timer_timeout() -> void:
 			player.take_damage(attack_damage)
 
 func take_damage(amount: int) -> void:
+	if is_dead:
+		return
 	health -= amount
 	print("Enemy hit! Health: ", health)
+	_flash_red()
 	if health <= 0:
 		die()
 
+func _flash_red() -> void:
+	mesh.get_active_material(0).albedo_color = Color.RED
+	await get_tree().create_timer(0.1).timeout
+	mesh.get_active_material(0).albedo_color = Color("2d52ad")
+
 func die() -> void:
+	is_dead = true
 	print("Enemy died!")
+	set_physics_process(false)
+	velocity = Vector3.ZERO
+	death_sound.play()
+	await death_sound.finished
 	queue_free()
