@@ -1,7 +1,7 @@
-[gd_scene format=3 uid="uid://cbse0ei1osbb0"]
+[gd_scene format=3 uid="uid://clup8btwwqpeq"]
 
-[ext_resource type="Script" uid="uid://nlkjajgeoycy" path="res://scenes/weapons/weapon_base.gd" id="1_v4xn6"]
-[ext_resource type="AudioStream" uid="uid://bddav344wf6dq" path="res://assets/sounds/gunshot.wav" id="2_uvw4m"]
+[ext_resource type="Script" uid="uid://cukwsg4uyk5g2" path="res://scenes/weapons/weapon_shotgun.gd" id="1_n6gw3"]
+[ext_resource type="AudioStream" uid="uid://bddav344wf6dq" path="res://assets/sounds/gunshot.wav" id="2_q7m0i"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_v4xn6"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
@@ -27,12 +27,11 @@ albedo_color = Color(0.8867607, 0.52113324, 0.086436264, 1)
 material = SubResource("StandardMaterial3D_v4xn6")
 size = Vector2(0.1, 0.1)
 
-[node name="Pistol" type="Node3D" unique_id=153327082]
-script = ExtResource("1_v4xn6")
-damage = 15.0
-mag_size = 12
-max_mags = 999
-unlimited_mags = true
+[node name="Shotgun" type="Node3D" unique_id=153327082]
+script = ExtResource("1_n6gw3")
+fire_rate = 0.6
+mag_size = 8
+max_mags = 9
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1163499361]
 environment = SubResource("Environment_omet7")
@@ -54,4 +53,4 @@ process_material = SubResource("ParticleProcessMaterial_v4xn6")
 draw_pass_1 = SubResource("QuadMesh_v4xn6")
 
 [node name="GunShotSound" type="AudioStreamPlayer3D" parent="." unique_id=1717635488]
-stream = ExtResource("2_uvw4m")
+stream = ExtResource("2_q7m0i")

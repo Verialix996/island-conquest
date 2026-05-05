@@ -1,0 +1,24 @@
+[gd_scene format=3 uid="uid://cg4nabv38tt6p"]
+
+[ext_resource type="Script" uid="uid://b2vr2kuqg3qmy" path="res://scenes/world/zone.gd" id="1_1v65r"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_byyjf"]
+size = Vector3(2, 5, 20)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1v65r"]
+transparency = 1
+albedo_color = Color(1, 0, 0, 0.4)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_lyk6n"]
+material = SubResource("StandardMaterial3D_1v65r")
+size = Vector2(20, 20)
+
+[node name="zone" type="Area3D" unique_id=1609887701]
+script = ExtResource("1_1v65r")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=188427117]
+shape = SubResource("BoxShape3D_byyjf")
+
+[node name="ZoneVisual" type="MeshInstance3D" parent="." unique_id=603531000]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, 0)
+mesh = SubResource("PlaneMesh_lyk6n")

@@ -3,6 +3,9 @@
 [ext_resource type="Script" uid="uid://dvwerbtq0ttlf" path="res://scenes/player/player.gd" id="1_8afob"]
 [ext_resource type="PackedScene" uid="uid://cbse0ei1osbb0" path="res://scenes/weapons/weapon_base.tscn" id="2_dovo2"]
 [ext_resource type="AudioStream" uid="uid://csgok45ic8p5f" path="res://assets/sounds/grunt.ogg" id="3_gmlin"]
+[ext_resource type="PackedScene" uid="uid://clup8btwwqpeq" path="res://scenes/weapons/weapon_shotgun.tscn" id="4_lvxji"]
+[ext_resource type="PackedScene" uid="uid://cv77uh1qgimdq" path="res://scenes/weapons/weapon_rifle.tscn" id="5_75vfm"]
+[ext_resource type="Script" uid="uid://b88k4iy1p66m3" path="res://scripts/health_component.gd" id="5_p47bc"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_x7p2l"]
 albedo_color = Color(0.2065363, 0.49325317, 9.62615e-08, 1)
@@ -25,8 +28,16 @@ surface_material_override/0 = SubResource("StandardMaterial3D_gmlin")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=2067336665]
 shape = SubResource("CapsuleShape3D_dovo2")
 
-[node name="Weapon" parent="." unique_id=153327082 instance=ExtResource("2_dovo2")]
+[node name="Pistol" parent="." unique_id=153327082 instance=ExtResource("2_dovo2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.53015584)
 
 [node name="HitSound" type="AudioStreamPlayer3D" parent="." unique_id=1324445993]
 stream = ExtResource("3_gmlin")
+
+[node name="Shotgun" parent="." unique_id=534391030 instance=ExtResource("4_lvxji")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.51347566)
+
+[node name="Rifle" parent="." unique_id=1967543141 instance=ExtResource("5_75vfm")]
+
+[node name="HealthComponent" type="Node" parent="." unique_id=377475467]
+script = ExtResource("5_p47bc")
