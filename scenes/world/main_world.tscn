@@ -1,0 +1,26 @@
+[gd_scene format=3 uid="uid://bs2gqyr3ais5"]
+
+[ext_resource type="PackedScene" uid="uid://cwug103slc8ve" path="res://scenes/player/player.tscn" id="1_2i8n1"]
+[ext_resource type="Script" uid="uid://cfxsrnu5h2vtg" path="res://scenes/world/camera.gd" id="1_50lg6"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_d32vy"]
+
+[sub_resource type="WorldBoundaryShape3D" id="WorldBoundaryShape3D_2i8n1"]
+
+[node name="MainWorld" type="Node3D" unique_id=2117265270]
+
+[node name="Ground" type="StaticBody3D" parent="." unique_id=1928188511]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground" unique_id=1303621748]
+transform = Transform3D(20, 0, 0, 0, 20, 0, 0, 0, 20, 0, 0, 0)
+mesh = SubResource("PlaneMesh_d32vy")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground" unique_id=1876065000]
+shape = SubResource("WorldBoundaryShape3D_2i8n1")
+
+[node name="camera" type="Camera3D" parent="." unique_id=889325677]
+transform = Transform3D(1, 0, 0, 0, 0.49999997, 0.86602545, 0, -0.86602545, 0.49999997, 0, 16, 8)
+script = ExtResource("1_50lg6")
+
+[node name="Player" parent="." unique_id=378423886 instance=ExtResource("1_2i8n1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
