@@ -14,6 +14,7 @@ material = SubResource("StandardMaterial3D_1hukp")
 albedo_color = Color(0.5529412, 0, 0.62352943, 1)
 
 [node name="enemyRanged" unique_id=1477360822 instance=ExtResource("1_1phqv")]
+groups=["enemy"]
 script = ExtResource("2_w85hd")
 preferred_distance = 8.0
 shoot_range = 15.0

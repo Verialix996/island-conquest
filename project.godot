@@ -15,6 +15,11 @@ run/main_scene="uid://bs2gqyr3ais5"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
 
+[autoload]
+
+EventBus="*res://scripts/event_bus.gd"
+GameManager="*uid://csayxp04y2hrs"
+
 [input]
 
 ui_left={

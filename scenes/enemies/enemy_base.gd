@@ -6,6 +6,7 @@ enum State { PATROL, CHASE, ATTACK }
 @export var detection_range: float = 10.0
 @export var attack_range: float = 1.5
 @export var attack_damage: float = 10.0
+@export var faction: FactionData = null
 
 var is_dead: bool = false
 var state: State = State.PATROL
@@ -15,11 +16,12 @@ var attack_timer: Timer
 var death_sound: AudioStreamPlayer3D
 var mesh: MeshInstance3D
 var health_component: HealthComponent
+var original_color: Color
 
-# Debuff values
 var debuff_movement: float = 0.0
 
 func _ready() -> void:
+	add_to_group("enemy")
 	player = get_tree().get_first_node_in_group("player")
 	nav_agent = $NavigationAgent3D
 	attack_timer = $AttackTimer
@@ -29,6 +31,10 @@ func _ready() -> void:
 	health_component = $HealthComponent
 	health_component.unit_died.connect(_on_died)
 	health_component.debuffs_updated.connect(_on_debuffs_updated)
+	# Duplicate material so each enemy has its own, then store original color
+	var mat = mesh.get_active_material(0).duplicate()
+	mesh.set_surface_override_material(0, mat)
+	original_color = mat.albedo_color
 
 func _physics_process(_delta: float) -> void:
 	if player == null:
@@ -53,9 +59,31 @@ func _physics_process(_delta: float) -> void:
 			velocity = dir * effective_speed
 			move_and_slide()
 		State.PATROL:
-			velocity = Vector3.ZERO
+			# Move toward the nearest player-owned zone to contest it
+			var target_zone = _find_player_zone()
+			if target_zone != null:
+				nav_agent.target_position = target_zone.global_position
+				var next = nav_agent.get_next_path_position()
+				var dir = (next - global_position).normalized()
+				velocity = dir * effective_speed
+				move_and_slide()
+			else:
+				velocity = Vector3.ZERO
 		State.ATTACK:
 			velocity = Vector3.ZERO
+
+func _find_player_zone() -> Node:
+	var closest: Node = null
+	var closest_dist: float = INF
+	for zone_key in GameManager.zones:
+		var owner = GameManager.zone_ownership.get(zone_key)
+		if owner != null and owner.is_player_faction:
+			var zone = GameManager.zones[zone_key]
+			var dist = global_position.distance_to(zone.global_position)
+			if dist < closest_dist:
+				closest_dist = dist
+				closest = zone
+	return closest
 
 func _on_attack_timer_timeout() -> void:
 	if state == State.ATTACK and player != null:
@@ -85,4 +113,4 @@ func _flash_red() -> void:
 	mesh.get_active_material(0).albedo_color = Color.RED
 	await get_tree().create_timer(0.1).timeout
 	if is_instance_valid(self):
-		mesh.get_active_material(0).albedo_color = Color("2d52ad")
+		mesh.get_active_material(0).albedo_color = original_color

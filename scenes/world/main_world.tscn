@@ -5,8 +5,9 @@
 [ext_resource type="PackedScene" uid="uid://bjxq6qeucgwg2" path="res://scenes/enemies/enemy_base.tscn" id="3_01o1s"]
 [ext_resource type="Script" uid="uid://bqc4j3jefbtqb" path="res://scenes/world/hud.gd" id="4_dbnql"]
 [ext_resource type="PackedScene" uid="uid://by11e6xdq2pdu" path="res://scenes/enemies/enemy_ranged.tscn" id="5_5cb6b"]
-[ext_resource type="PackedScene" uid="uid://dgyhxnrn4bres" path="res://scenes/world/supply_station.tscn" id="5_y4hen"]
+[ext_resource type="Resource" uid="uid://c5xsht561s7m0" path="res://scripts/resources/faction_enemy.tres" id="6_8cl5l"]
 [ext_resource type="PackedScene" uid="uid://cg4nabv38tt6p" path="res://scenes/world/zone.tscn" id="6_rnvp4"]
+[ext_resource type="Resource" uid="uid://cc6cb268jkqec" path="res://scripts/resources/faction_player.tres" id="7_qv2nv"]
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_01o1s"]
 vertices = PackedVector3Array(-6.75, 0.5, -17.25, -3, 0.5, -20.75, -3, 0.5, -21.5, -7.75, 0.5, -16.75, -2, 0.5, -49.5, -11.5, 0.5, -5, -7.75, 0.5, -15.75, -16, 0.5, -5, -49.5, 0.5, -4.25, -49.5, 0.5, -49.5, -2, 0.5, -22, -16.25, 0.5, -4.25, 1.5, 0.5, -18.75, 6, 0.5, -18.75, 7.25, 0.5, -19.75, 7.25, 0.5, -49.5, -1.5, 0.5, -22, 10.5, 0.5, -16.75, 49.5, 0.5, -16.25, 49.5, 0.5, -49.5, 10.5, 0.5, -16.25, -3.5, 0.5, -13.25, -4.25, 0.5, -12.75, -3, 0.5, -11.5, -2.5, 0.5, -12.25, -3.5, 0.5, -14.25, 0, 0.5, -17.5, -1.5, 0.5, -12.25, 1.5, 0.5, -9, 4, 0.5, -10.75, 1.25, 0.5, -13.5, 1.25, 0.5, -14.25, 2, 0.5, -14.75, 0.5, 0.5, -17.5, 3, 0.5, -14.75, 5.75, 0.5, -11.75, 9.25, 0.5, -15.25, 6, 0.5, -18.25, 2.5, 0.5, 1.75, 2.75, 0.5, 2.75, 4.25, 0.5, 2.75, 4.5, 0.5, 1.75, 2.75, 0.5, -3.5, 10, 0.5, -15.25, 5.25, 0.5, -10.5, 1.5, 0.5, -8.25, 0.5, 0.5, -7.75, 0.5, 0.5, -5, 2.5, 0.5, -5, 9.25, 0.5, 1.75, 9.5, 0.5, 2.5, 49.5, 0.5, 2.5, 0.25, 0.5, -3.25, 0.25, 0.5, 1.75, -3, 0.5, -10.75, 0, 0.5, -7.75, -5, 0.5, -12.75, -2.5, 0.5, -4.25, -2.25, 0.5, -5, -11, 0.5, -4.25, -16, 0.5, 1.75, -13.75, 0.5, 1.75, -13.75, 0.5, -3.25, -16, 0.5, -3.25, -16.25, 0.5, 2.75, -49.5, 0.5, 2.75, -11.25, 0.5, 1.75, -11, 0.5, 2.75, -9.5, 0.5, 2.75, -9.25, 0.5, 1.75, -11.25, 0.5, -3.25, -4.5, 0.5, 1.75, -2.25, 0.5, -3.25, -4.25, 0.5, 2.75, -2.5, 0.5, 2.75, -2.25, 0.5, 1.75, 7, 0.5, 3.5, 7, 0.5, 6.75, 7.75, 0.5, 6.75, 9.25, 0.5, 3.5, 10.5, 0.5, 9.5, 10.5, 0.5, 10.25, 49.5, 0.5, 10.25, 4.5, 0.5, 3.5, -9.25, 0.5, 3.5, 2.5, 0.5, 3.5, 6, 0.5, 7.75, 6, 0.5, 7.25, -11.25, 0.5, 3.5, 1.25, 0.5, 13, -2.25, 0.5, 3.5, -4.5, 0.5, 3.5, 1.25, 0.5, 12, -16, 0.5, 3.5, 2.5, 0.5, 11.5, 4.25, 0.5, 16, -49.5, 0.5, 49.5, 4.75, 0.5, 49.5, 4.75, 0.5, 16, 9, 0.5, 11, 5.75, 0.5, 14.5, 10.25, 0.5, 11, 49.5, 0.5, 49.5, 5.75, 0.5, 15.5)
@@ -34,13 +35,15 @@ transform = Transform3D(1, 0, 0, 0, 0.49999997, 0.86602545, 0, -0.86602545, 0.49
 script = ExtResource("1_50lg6")
 
 [node name="Player" parent="." unique_id=378423886 instance=ExtResource("1_2i8n1")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.9876018, 1, -37.81345)
 
 [node name="enemy" parent="." unique_id=1477360822 instance=ExtResource("3_01o1s")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1235533, 13.418313)
+faction = ExtResource("6_8cl5l")
 
 [node name="enemy2" parent="." unique_id=827345420 instance=ExtResource("3_01o1s")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.1126795, 1.1235533, 13.418313)
+faction = ExtResource("6_8cl5l")
 
 [node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=1039171969]
 navigation_mesh = SubResource("NavigationMesh_01o1s")
@@ -166,6 +169,18 @@ mesh = SubResource("BoxMesh_y4hen")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26.748764, 0, 13.7856655)
 shape = SubResource("BoxShape3D_5cb6b")
 
+[node name="zone" parent="." unique_id=1609887701 instance=ExtResource("6_rnvp4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.4958992, 1.3202276, 13.975065)
+owner_faction = ExtResource("6_8cl5l")
+player_faction = ExtResource("7_qv2nv")
+enemy_faction = ExtResource("6_8cl5l")
+
+[node name="zone2" parent="." unique_id=724240349 instance=ExtResource("6_rnvp4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.2545824, 1.3202276, -32.20096)
+owner_faction = ExtResource("7_qv2nv")
+player_faction = ExtResource("7_qv2nv")
+enemy_faction = ExtResource("6_8cl5l")
+
 [node name="HUD" type="CanvasLayer" parent="." unique_id=1187547968]
 script = ExtResource("4_dbnql")
 
@@ -189,14 +204,10 @@ offset_bottom = 23.0
 grow_horizontal = 0
 text = "30/5"
 
-[node name="SupplyStation" parent="HUD" unique_id=2094388815 instance=ExtResource("5_y4hen")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.976753, 0.75, -3.7398548)
-
-[node name="zone" parent="HUD" unique_id=1609887701 instance=ExtResource("6_rnvp4")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.4958992, 1.3202276, 13.975065)
-
 [node name="enemyRanged" parent="." unique_id=540178531 instance=ExtResource("5_5cb6b")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.6697489, 1.4096537, 6.413868)
+faction = ExtResource("6_8cl5l")
 
 [node name="enemyRanged2" parent="." unique_id=760374376 instance=ExtResource("5_5cb6b")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.32492, 1.4096537, 9.571184)
+faction = ExtResource("6_8cl5l")

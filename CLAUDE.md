@@ -2,8 +2,8 @@
 
 ## Project Overview
 
-We are building a **3D top-down military/tactical open-world sandbox shooter** using **Godot 4**.
-The goal is a functional, polished, and commercially sellable game.
+We are building a **3D top-down military/tactical open-world sandbox** using **Godot 4**.
+The full vision: a randomly generated continent, multiple AI factions with randomized goals that simulate autonomously, full diplomacy, territory control, and RTS-lite base building. Comparable in scope to Mount & Blade or Kenshi.
 
 This is a **learning-first** project. The developer is a complete beginner to Godot and game development.
 Claude Code's role is equal parts **collaborator and teacher** — always explain *why* you're doing something, not just *what*.
@@ -14,7 +14,7 @@ Claude Code's role is equal parts **collaborator and teacher** — always explai
 
 - **Experience level:** Complete beginner (no prior Godot or game dev experience)
 - **Learning goals:** Understand Godot 4 architecture, GDScript, scene/node system, game loops, and how to iterate toward a shippable product
-- **Working style:** Hands-on — build real things, learn from them, refine them
+- **Working style:** Hands-on — wants to type/build things themselves, not copy-paste. Claude guides step by step.
 
 ---
 
@@ -24,28 +24,27 @@ Claude Code's role is equal parts **collaborator and teacher** — always explai
 |---|---|
 | **Engine** | Godot 4 (latest stable) |
 | **Perspective** | Top-down 3D (camera at an angle above the player) |
-| **Genre** | Military / Tactical Shooter |
-| **Game Loop** | Open world / sandbox — player has freedom to explore, complete objectives, and engage enemies in a persistent world |
-| **Target Platform** | PC (Windows primary, Mac/Linux secondary) |
-| **Monetization goal** | Commercial release (Steam or itch.io) |
+| **Genre** | Military / Tactical Shooter + Grand Strategy |
+| **Setting** | Modern military |
+| **Game Loop** | Territory control, faction management, RTS-lite base building |
+| **World** | Randomly generated large continent, regions, roads, cities |
+| **Factions** | Multiple AI factions fight each other and player, full diplomacy |
+| **Done criteria** | Boot up → random world → factions with random goals → everything simulates |
+| **Target Platform** | PC (Windows primary) |
+| **Monetization** | Commercial release (Steam or itch.io) |
 
 ---
 
 ## How Claude Code Should Work With Me
 
-1. **Teach as you build.** Before writing any non-trivial code, briefly explain the concept or pattern being used (e.g. "We're using a CharacterBody3D here because it gives us built-in physics helpers for a moving character — here's what that means...").
-
-2. **Explain Godot-specific concepts on first use.** Nodes, Scenes, Signals, the SceneTree, Resources, Autoloads — explain them the first time they appear.
-
-3. **Build incrementally.** Always prefer small, testable steps over large code dumps. After each step, explain how to test it in the Godot editor.
-
-4. **Comment the code.** All GDScript files should have meaningful comments explaining non-obvious logic.
-
-5. **Think about sellability.** When making design decisions, mention if there's a tradeoff between "quick prototype" and "production quality." Flag tech debt.
-
-6. **Ask before assuming.** If a design decision isn't clear (e.g. how many enemy types, what weapons to start with), ask rather than guess.
-
-7. **Milestone thinking.** Always know what the current milestone is and what "done" looks like for it.
+1. **Teach as you build.** Before writing any non-trivial code, briefly explain the concept or pattern being used.
+2. **Explain Godot-specific concepts on first use.** Nodes, Scenes, Signals, the SceneTree, Resources, Autoloads.
+3. **Guide, don't create.** Give step-by-step instructions for the developer to follow. Only write code files directly when the developer asks. Never auto-create files without permission.
+4. **Build incrementally.** Always prefer small, testable steps. After each step, explain how to test it.
+5. **Comment the code.** All GDScript files should have meaningful comments explaining non-obvious logic.
+6. **Think about sellability.** Flag tradeoffs between quick prototype and production quality.
+7. **Ask before assuming.** If a design decision isn't clear, ask rather than guess.
+8. **Milestone thinking.** Always know what the current milestone is and what "done" looks like for it.
 
 ---
 
@@ -54,164 +53,174 @@ Claude Code's role is equal parts **collaborator and teacher** — always explai
 - **Engine:** Godot 4 (GDScript — not C#)
 - **Language:** GDScript
 - **Version control:** Git (remind the developer to commit after each milestone)
-- **Asset pipeline:** Start with Godot primitives and free assets; upgrade to custom art later
+- **Asset pipeline:** Godot primitives until Milestone 9; Blender for custom art from Milestone 9+
 - **Audio:** Godot's built-in AudioStreamPlayer3D
 - **UI:** Godot's built-in Control nodes (CanvasLayer)
 
 ---
 
-## Project Structure
+## Current File Structure (actual)
 
 ```
-project/
-├── scenes/
-│   ├── player/
-│   │   ├── player.tscn
-│   │   └── player.gd
-│   ├── enemies/
-│   │   ├── enemy_base.tscn
-│   │   └── enemy_base.gd
-│   ├── world/
-│   │   ├── main_world.tscn
-│   │   └── terrain/
-│   ├── ui/
-│   │   ├── hud.tscn
-│   │   └── hud.gd
-│   └── weapons/
-│       ├── weapon_base.tscn
-│       └── weapon_base.gd
-├── scripts/
-│   ├── autoloads/
-│   │   ├── game_manager.gd      # Global game state
-│   │   └── event_bus.gd         # Global signal hub
-│   └── resources/
-│       ├── weapon_data.gd       # Weapon stats as Resources
-│       └── enemy_data.gd        # Enemy stats as Resources
-├── assets/
-│   ├── textures/
-│   ├── models/
-│   ├── sounds/
-│   └── music/
-└── CLAUDE.md
+scenes/
+├── player/
+│   ├── player.tscn
+│   └── player.gd
+├── enemies/
+│   ├── enemy_base.tscn + enemy_base.gd     # Melee, chases player
+│   └── enemy_ranged.tscn + enemy_ranged.gd # Ranged, keeps distance
+├── weapons/
+│   ├── weapon_base.tscn + weapon_base.gd   # Pistol (unlimited mags)
+│   ├── weapon_rifle.tscn                   # Rifle (inherits base)
+│   └── weapon_shotgun.tscn + weapon_shotgun.gd
+├── world/
+│   ├── main_world.tscn                     # Main scene
+│   ├── camera.gd
+│   ├── hud.gd
+│   ├── supply_station.tscn + supply_station.gd
+│   └── zone.tscn + zone.gd
+scripts/
+├── health_component.gd                     # Body part health system
+└── resources/
+    └── body_part.gd                        # Body part Resource
+assets/
+└── sounds/
+    ├── gunshot.wav
+    ├── grunt.ogg
+    └── death_male.wav
 ```
 
 ---
 
 ## Development Milestones
 
-Work through these in order. Do not skip ahead.
-
 ### Milestone 1 — Foundation ✅
-- [x] Godot project created and organized per folder structure above
-- [x] Top-down 3D camera set up and working
-- [x] Player character moves in the world (WASD)
-- [x] Player aims toward mouse cursor (top-down aiming)
-- [x] Basic flat terrain / placeholder world
+- [x] Top-down 3D camera, WASD movement, mouse aiming, flat terrain
 
 ### Milestone 2 — Core Combat ✅
-- [x] Player can fire a weapon (raycast)
-- [x] Basic enemy with health that can be damaged and killed
-- [x] Enemy has simple AI (patrol → detect → chase → attack)
-- [x] Player has health and can die (scene restarts)
-- [x] Basic HUD (health bar)
+- [x] Raycast weapon, enemy AI (chase/attack), player health, HUD health bar
 
 ### Milestone 3 — Game Feel ✅
-- [x] Screen shake when player takes damage
-- [x] Muzzle flash particles when shooting
-- [x] Sound effects: gunshots, player hit grunt, enemy death
-- [x] Enemy freezes and plays death sound before disappearing
-- [x] Player and enemy flash red on hit
+- [x] Screen shake, muzzle flash, sound effects, hit flash, death sound
 
-### Milestone 4 — Open World Sandbox
-- [ ] Larger explorable world with cover objects
-- [ ] Multiple enemy types (at least 2)
-- [ ] Multiple weapons (at least 2, e.g. rifle + shotgun)
-- [ ] Pickups: ammo, health, weapons
-- [ ] Objective system (simple: eliminate all enemies in zone)
+### Milestone 4 — Open World Sandbox ✅
+- [x] Large world (100x100) with cover objects and navigation mesh
+- [x] Two enemy types: melee (blue) and ranged (purple), using scene inheritance
+- [x] Three weapons: pistol (unlimited), rifle, shotgun — with tracer lines
+- [x] Body part health system (head/torso/arms/legs), probability-based hits, stacking debuffs
+- [x] Magazine-based ammo: discard on reload, auto-switch to pistol when empty
+- [x] Supply station: heals and rearms player when nearby (replaces pickups)
+- [x] Zone capture system: clear enemies → zone turns green → foundation for territory control
 
-### Milestone 5 — Polish & Loop
-- [ ] Main menu scene
-- [ ] Pause menu
-- [ ] Death / game over screen with restart
-- [ ] Save/load or persistent world state (basic)
-- [ ] Performance pass: ensure smooth framerate
+### Milestone 5 — Territory & Factions (Next)
+- [ ] `FactionData` Resource: name, color, starting zones, goals, relationships
+- [ ] Zone ownership: each zone belongs to a faction (not just "enemy"/"player")
+- [ ] Player captures zones by clearing enemies, factions reclaim over time
+- [ ] Supply station only works in player-owned zones
+- [ ] Basic faction reputation meter (hostile / neutral / allied)
+- [ ] Factions fight each other — enemy units from different factions attack each other
+- [ ] GameManager autoload: tracks zone ownership and faction relationships
+- [ ] EventBus autoload: global signal hub for faction events
 
-### Milestone 6 — Pre-Release
-- [ ] Replace placeholder art with consistent visual style
-- [ ] Sound and music pass
-- [ ] Playtesting feedback and balance
+### Milestone 6 — Procedural World Generation
+- [ ] Map divided into named regions with procedurally placed zones
+- [ ] Cities and roads placed on the map
+- [ ] Factions assigned random starting territories and goals at game start
+- [ ] Each run generates a different world state
+- [ ] Navigation mesh baked at runtime over generated terrain
+
+### Milestone 7 — Base Building
+- [ ] Player can place structures in owned zones
+- [ ] Structure types: barracks (spawns units), wall, turret, supply depot
+- [ ] Resource system: supply points generated by owned zones
+- [ ] Tech tree: unlock better units/buildings with resources
+- [ ] Supply station tied to supply depot building in owned zone
+
+### Milestone 8 — Full Faction Simulation
+- [ ] Factions have economies (resources from owned zones)
+- [ ] Factions make autonomous decisions: expand, attack, defend, negotiate
+- [ ] Factions form alliances and declare war on each other
+- [ ] World state evolves even when player is idle
+
+### Milestone 9 — Full Diplomacy
+- [ ] Player can send/receive diplomatic messages
+- [ ] Treaties: ceasefire, alliance, trade, vassalage
+- [ ] Faction agendas: expansionist, isolationist, opportunist
+- [ ] Betrayal, coalition building, faction collapse
+- [ ] Start replacing placeholder art with Blender low-poly models
+
+### Milestone 10 — Polish & Release
+- [ ] Full art and sound pass
+- [ ] Main menu, pause menu, game over screen
+- [ ] Map screen UI showing faction territories
+- [ ] Performance pass for large simulated world
 - [ ] Build export for Windows
 - [ ] Steam / itch.io page preparation
+
+---
+
+## Key Architecture Decisions (already made)
+
+- **Scene inheritance** for enemies and weapons — new types override only what's different
+- **HealthComponent** node on every unit — body part system, hit rolling, debuff signals
+- **BodyPart Resource** — data container per body part (hit chance, health, debuff type)
+- **Mag-based ammo** — discard on reload, auto-switch to pistol when empty
+- **Zone as Area3D** — uses `get_overlapping_bodies()` each frame to check capture state
+- **Supply station** — heals/rearms only in captured zones (Milestone 5 will enforce this)
+- **Factions as Resources** — faction data stored as Godot Resources (Milestone 5)
+- **GameManager + EventBus autoloads** — global state and signal hub (Milestone 5)
+
+---
+
+## Health & Ammo System (implemented)
+
+### Body Part System
+| Part | Hit Chance | Max HP | On Depleted | Debuff |
+|---|---|---|---|---|
+| Head | 10% | 30 | Instant death | Accuracy |
+| Torso | 40% | 80 | Instant death | Damage taken |
+| Left Arm | 15% | 40 | Max debuff | Weapon sway |
+| Right Arm | 15% | 40 | Max debuff | Fire rate |
+| Legs | 20% | 50 | Max debuff | Movement speed |
+
+- Debuffs stack across all damaged parts
+- Weapons can have hit chance modifiers (e.g. shotgun: +legs, -head)
+
+### Ammo System
+- Pistol: unlimited mags, 12 rounds, fallback weapon (key 1)
+- Rifle: 5 mags, 30 rounds (key 2)
+- Shotgun: 4 mags, 8 rounds, 6 pellets with spread (key 3)
+- R to reload — discards current mag (Tarkov style)
+- Auto-switch to pistol when rifle/shotgun runs out of mags
 
 ---
 
 ## Coding Conventions (GDScript)
 
 ```gdscript
-# Use snake_case for variables and functions
-var player_health: int = 100
-
-# Use PascalCase for class names
-class_name PlayerController
-
+# snake_case for variables and functions
+# PascalCase for class names
 # Always type-hint variables where possible
-var speed: float = 5.0
-var enemies: Array[Node] = []
-
 # Use signals for decoupled communication
-signal player_died
-signal enemy_killed(enemy: Node)
-
-# Autoloads are accessed via their registered name, not preloaded
-# e.g. GameManager.current_level (not load("res://..."))
-
-# Every script file should have a brief comment at the top explaining its purpose
+# Autoloads accessed via registered name (e.g. GameManager.zones)
+# One responsibility per script
 ```
 
 ---
 
-## Key Godot 4 Concepts to Learn (in order)
+## Asset Plan
 
-1. **Nodes & Scenes** — Everything is a node; scenes are reusable node trees
-2. **CharacterBody3D** — The right node for a player or enemy that moves
-3. **Signals** — How nodes communicate without tight coupling
-4. **@export** — How to expose variables to the Godot editor inspector
-5. **Autoloads (Singletons)** — Global scripts for game state and events
-6. **Resources** — Data containers (great for weapon/enemy stats)
-7. **AnimationPlayer / AnimationTree** — Character animations
-8. **NavigationAgent3D** — Enemy pathfinding
-9. **RayCast3D** — Hit detection for weapons
-10. **GPUParticles3D** — Visual effects
-
----
-
-## Design Principles
-
-- **Fun first, graphics second.** A game with placeholder cubes that feels great beats a beautiful game that feels bad.
-- **Iterate fast.** Get something working, play it, improve it.
-- **Scope management.** When a new idea comes up, add it to a "future features" list rather than implementing it immediately.
-- **Sellability checklist:** Good game loop, clear win/lose states, polished core experience, works without crashes, has a reasonable content volume.
-
----
-
-## Future Features (Backlog — do not implement until Milestone 4+)
-
-- Destructible environments
-- Vehicles
-- Stealth mechanics
-- Day/night cycle
-- Multiplayer
-- Procedural map generation
-- Mission/story campaign
-- Inventory system
-- Skill tree / progression
+- **Milestones 1-8:** Godot primitives (boxes, capsules) with faction colors
+- **Milestone 9+:** Blender for low-poly 3D models (units, buildings, vehicles)
+- **Animation:** Minimal — top-down camera makes character animation barely visible. Use Godot AnimationPlayer for buildings/UI. Blender for any character animations in Milestone 10.
 
 ---
 
 ## Notes for Claude Code
 
 - Always refer back to the current milestone before suggesting new features
-- If the developer asks "how does X work," stop and explain it before writing code
-- Remind the developer to run and test in Godot after each meaningful change
+- If the developer asks "how does X work," stop and explain before writing code
+- Remind the developer to commit after each milestone
 - Keep scripts focused — one responsibility per script
 - When in doubt, build the simplest version first and note where to expand later
+- The developer types code themselves — guide step by step, don't auto-generate files

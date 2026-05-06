@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="FactionData" format=3 uid="uid://c5xsht561s7m0"]
+
+[ext_resource type="Script" uid="uid://dd7so7vb4fhsb" path="res://scripts/resources/faction_data.gd" id="1_sjcm7"]
+
+[resource]
+script = ExtResource("1_sjcm7")
+faction_name = "Enemy"
+color = Color(1, 0, 0, 1)
+metadata/_custom_type_script = "uid://dd7so7vb4fhsb"
