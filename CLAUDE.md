@@ -67,8 +67,8 @@ scenes/
 │   ├── player.tscn
 │   └── player.gd
 ├── enemies/
-│   ├── enemy_base.tscn + enemy_base.gd     # Melee, chases player
-│   └── enemy_ranged.tscn + enemy_ranged.gd # Ranged, keeps distance
+│   ├── enemy_base.tscn + enemy_base.gd     # Melee, faction-aware, navigates to hostile zones
+│   └── enemy_ranged.tscn + enemy_ranged.gd # Ranged, keeps preferred distance, strafe-backs
 ├── weapons/
 │   ├── weapon_base.tscn + weapon_base.gd   # Pistol (unlimited mags)
 │   ├── weapon_rifle.tscn                   # Rifle (inherits base)
@@ -77,12 +77,20 @@ scenes/
 │   ├── main_world.tscn                     # Main scene
 │   ├── camera.gd
 │   ├── hud.gd
-│   ├── supply_station.tscn + supply_station.gd
-│   └── zone.tscn + zone.gd
+│   ├── supply_station.tscn + supply_station.gd  # Visual prop only (healing now in zone.gd)
+│   └── zone.tscn + zone.gd                # Faction-aware capture + healing + unit spawning
 scripts/
 ├── health_component.gd                     # Body part health system
+├── world_generator.gd                      # Procedural world: cover, zones, navmesh, starting units
+├── game_manager.gd                         # Autoload: zone ownership + faction registry
+├── event_bus.gd                            # Autoload: global signal hub
 └── resources/
-    └── body_part.gd                        # Body part Resource
+    ├── body_part.gd                        # Body part Resource
+    ├── faction_data.gd                     # FactionData Resource (name, color, is_player_faction)
+    ├── faction_player.tres                 # Green, is_player_faction=true
+    ├── faction_red.tres                    # Red AI faction
+    ├── faction_blue.tres                   # Blue AI faction
+    └── faction_orange.tres                 # Orange AI faction
 assets/
 └── sounds/
     ├── gunshot.wav
@@ -112,22 +120,22 @@ assets/
 - [x] Supply station: heals and rearms player when nearby (replaces pickups)
 - [x] Zone capture system: clear enemies → zone turns green → foundation for territory control
 
-### Milestone 5 — Territory & Factions (Next)
-- [ ] `FactionData` Resource: name, color, starting zones, goals, relationships
-- [ ] Zone ownership: each zone belongs to a faction (not just "enemy"/"player")
-- [ ] Player captures zones by clearing enemies, factions reclaim over time
-- [ ] Supply station only works in player-owned zones
-- [ ] Basic faction reputation meter (hostile / neutral / allied)
-- [ ] Factions fight each other — enemy units from different factions attack each other
-- [ ] GameManager autoload: tracks zone ownership and faction relationships
-- [ ] EventBus autoload: global signal hub for faction events
+### Milestone 5 — Territory & Factions ✅
+- [x] `FactionData` Resource: name, color, is_player_faction flag
+- [x] Zone ownership: each zone belongs to a faction (colored cylinder marker)
+- [x] Faction-aware capture: dominant faction by body count wins the zone
+- [x] Zone heals + rearms player when in a player-owned zone
+- [x] Factions fight each other — units from different factions attack each other
+- [x] GameManager autoload: tracks zone_ownership and zones dictionaries
+- [x] EventBus autoload: zone_captured / zone_lost / faction_relationship_changed signals
+- [x] Zone spawns units for its owner faction every 10 seconds (50/50 melee/ranged)
 
-### Milestone 6 — Procedural World Generation
-- [ ] Map divided into named regions with procedurally placed zones
-- [ ] Cities and roads placed on the map
-- [ ] Factions assigned random starting territories and goals at game start
-- [ ] Each run generates a different world state
-- [ ] Navigation mesh baked at runtime over generated terrain
+### Milestone 6 — Procedural World Generation ✅
+- [x] WorldGenerator node: procedurally places cover, zones, and starting units at runtime
+- [x] Zones assigned to factions (player gets closest, AI round-robins Red/Blue/Orange)
+- [x] All factions start with units around their zones
+- [x] Navigation mesh baked at runtime (PARSED_GEOMETRY_BOTH, agent_radius=1.0, RVO avoidance)
+- [x] All generation settings exposed as @export vars (editable in Inspector)
 
 ### Milestone 7 — Base Building
 - [ ] Player can place structures in owned zones
