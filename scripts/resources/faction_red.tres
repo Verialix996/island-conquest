@@ -4,6 +4,6 @@
 
 [resource]
 script = ExtResource("1_sjcm7")
-faction_name = "Enemy"
+faction_name = "Red"
 color = Color(1, 0, 0, 1)
 metadata/_custom_type_script = "uid://dd7so7vb4fhsb"

@@ -13,11 +13,11 @@ func _ready() -> void:
 	shoot_ray = $ShootRay
 
 func _physics_process(delta: float) -> void:
-	if startup_timer > 0.0:
-		startup_timer -= delta
+	if not is_inside_tree() or is_dead:
 		return
 
-	if is_dead:
+	if startup_timer > 0.0:
+		startup_timer -= delta
 		return
 
 	# Refresh target every second
@@ -45,8 +45,9 @@ func _physics_process(delta: float) -> void:
 	if dist <= shoot_range:
 		look_at(Vector3(target.global_position.x, global_position.y, target.global_position.z), Vector3.UP)
 		if dist < preferred_distance:
-			var dir = (global_position - target.global_position).normalized()
-			velocity = dir * move_speed
+			var dir = (global_position - target.global_position)
+			dir.y = 0.0
+			velocity = dir.normalized() * move_speed
 		else:
 			velocity = Vector3.ZERO
 		if shoot_timer <= 0.0:

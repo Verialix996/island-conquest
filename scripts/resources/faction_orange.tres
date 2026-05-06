@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="FactionData" format=3 uid="uid://b2hovqm47caxf"]
+
+[ext_resource type="Script" uid="uid://dd7so7vb4fhsb" path="res://scripts/resources/faction_data.gd" id="1_5y6yr"]
+
+[resource]
+script = ExtResource("1_5y6yr")
+faction_name = "Orange"
+color = Color(1, 0.5, 0, 1)
+metadata/_custom_type_script = "uid://dd7so7vb4fhsb"

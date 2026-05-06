@@ -25,6 +25,7 @@ var startup_timer: float = 0.3  # wait for NavigationAgent3D to sync after spawn
 func _ready() -> void:
 	add_to_group("enemy")
 	nav_agent = $NavigationAgent3D
+	nav_agent.avoidance_enabled = true
 	attack_timer = $AttackTimer
 	attack_timer.timeout.connect(_on_attack_timer_timeout)
 	death_sound = $DeathSound
