@@ -13,16 +13,39 @@ func _ready() -> void:
 	shoot_ray = $ShootRay
 
 func _physics_process(delta: float) -> void:
-	if player == null or is_dead:
+	if startup_timer > 0.0:
+		startup_timer -= delta
 		return
 
-	var dist = global_position.distance_to(player.global_position)
+	if is_dead:
+		return
+
+	# Refresh target every second
+	target_search_timer -= delta
+	if target_search_timer <= 0.0 or not is_instance_valid(target):
+		target_search_timer = 1.0
+		target = _find_nearest_hostile()
+
+	# No target — patrol toward a hostile zone
+	if target == null:
+		var zone = _find_hostile_zone()
+		if zone != null:
+			nav_agent.target_position = zone.global_position
+			var next = nav_agent.get_next_path_position()
+			var dir = (next - global_position).normalized()
+			velocity = dir * move_speed
+			move_and_slide()
+		else:
+			velocity = Vector3.ZERO
+		return
+
 	shoot_timer -= delta
+	var dist = global_position.distance_to(target.global_position)
 
 	if dist <= shoot_range:
-		look_at(Vector3(player.global_position.x, global_position.y, player.global_position.z), Vector3.UP)
+		look_at(Vector3(target.global_position.x, global_position.y, target.global_position.z), Vector3.UP)
 		if dist < preferred_distance:
-			var dir = (global_position - player.global_position).normalized()
+			var dir = (global_position - target.global_position).normalized()
 			velocity = dir * move_speed
 		else:
 			velocity = Vector3.ZERO
@@ -30,7 +53,7 @@ func _physics_process(delta: float) -> void:
 			_try_shoot()
 			shoot_timer = shoot_cooldown
 	else:
-		nav_agent.target_position = player.global_position
+		nav_agent.target_position = target.global_position
 		var next = nav_agent.get_next_path_position()
 		var dir = (next - global_position).normalized()
 		velocity = dir * move_speed

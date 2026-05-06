@@ -173,13 +173,11 @@ shape = SubResource("BoxShape3D_5cb6b")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.4958992, 1.3202276, 13.975065)
 owner_faction = ExtResource("6_8cl5l")
 player_faction = ExtResource("7_qv2nv")
-enemy_faction = ExtResource("6_8cl5l")
 
 [node name="zone2" parent="." unique_id=724240349 instance=ExtResource("6_rnvp4")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.2545824, 1.3202276, -32.20096)
 owner_faction = ExtResource("7_qv2nv")
 player_faction = ExtResource("7_qv2nv")
-enemy_faction = ExtResource("6_8cl5l")
 
 [node name="HUD" type="CanvasLayer" parent="." unique_id=1187547968]
 script = ExtResource("4_dbnql")

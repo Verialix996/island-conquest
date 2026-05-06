@@ -84,7 +84,7 @@ func heal(amount: float) -> void:
 	health_component.heal_most_damaged(amount)
 	health_changed.emit(health_component.parts)
 
-func _on_part_hit(part_name: String, damage: float) -> void:
+func _on_part_hit(_part_name: String, _damage: float) -> void:
 	hit_sound.play()
 	_flash_red()
 	damage_taken.emit()

@@ -1,19 +1,25 @@
 extends Area3D
 
+const ENEMY_MELEE = preload("res://scenes/enemies/enemy_base.tscn")
+const ENEMY_RANGED = preload("res://scenes/enemies/enemy_ranged.tscn")
+
 @export var zone_name: String = "Zone"
 @export var owner_faction: FactionData = null
 @export var player_faction: FactionData = null
-@export var enemy_faction: FactionData = null
 @export var capture_time: float = 3.0
 @export var heal_amount: float = 5.0
 @export var heal_interval: float = 1.0
 @export var mags_to_add: int = 1
+@export var spawn_interval: float = 10.0
+@export var max_units: int = 5
 
 var zone_visual: MeshInstance3D
 var capture_progress: float = 0.0
 var heal_timer: float = 0.0
+var spawn_timer: float = 0.0
 var mat: StandardMaterial3D
 var bodies_in_zone: Array = []
+var spawned_units: Array = []
 
 func _ready() -> void:
 	zone_visual = $ZoneVisual
@@ -32,26 +38,31 @@ func _on_body_exited(body: Node3D) -> void:
 
 func _process(delta: float) -> void:
 	var player: Node3D = null
-	var player_count := 0
-	var enemy_count := 0
+	var faction_counts: Dictionary = {}
 
 	for body in bodies_in_zone:
 		if not is_instance_valid(body):
 			continue
+		var body_faction: FactionData = null
 		if body.is_in_group("player"):
-			player_count += 1
 			player = body
+			body_faction = player_faction
 		elif body.is_in_group("enemy") and not body.is_dead:
-			enemy_count += 1
+			body_faction = body.get("faction")
+		if body_faction != null:
+			faction_counts[body_faction] = faction_counts.get(body_faction, 0) + 1
 
 	bodies_in_zone = bodies_in_zone.filter(func(b): return is_instance_valid(b))
 
-	# Capture logic
+	# Find dominant faction (most bodies, no capture on a tie)
 	var dominant_faction: FactionData = null
-	if player_count > enemy_count:
-		dominant_faction = player_faction
-	elif enemy_count > player_count:
-		dominant_faction = enemy_faction
+	var max_count: int = 0
+	for f in faction_counts:
+		if faction_counts[f] > max_count:
+			max_count = faction_counts[f]
+			dominant_faction = f
+		elif faction_counts[f] == max_count:
+			dominant_faction = null  # tie, contested
 
 	if dominant_faction != null and dominant_faction != owner_faction:
 		capture_progress += delta
@@ -68,6 +79,25 @@ func _process(delta: float) -> void:
 			heal_timer = heal_interval
 			_resupply(player)
 
+	# Spawn units for all factions that own this zone
+	if owner_faction != null:
+		spawn_timer -= delta
+		if spawn_timer <= 0.0:
+			spawn_timer = spawn_interval
+			_try_spawn_unit()
+
+func _try_spawn_unit() -> void:
+	spawned_units = spawned_units.filter(func(u): return is_instance_valid(u))
+	if spawned_units.size() >= max_units:
+		return
+	var scene = ENEMY_MELEE if randf() < 0.5 else ENEMY_RANGED
+	var unit = scene.instantiate()
+	unit.faction = owner_faction
+	get_tree().current_scene.add_child(unit)
+	var offset = Vector3(randf_range(-3.0, 3.0), 0.0, randf_range(-3.0, 3.0))
+	unit.global_position = Vector3(global_position.x + offset.x, 1.1, global_position.z + offset.z)
+	spawned_units.append(unit)
+
 func _resupply(player: Node3D) -> void:
 	if player.has_method("heal"):
 		player.heal(heal_amount)
@@ -80,6 +110,7 @@ func _resupply(player: Node3D) -> void:
 func _capture(new_faction: FactionData) -> void:
 	owner_faction = new_faction
 	heal_timer = 0.0
+	spawn_timer = spawn_interval  # delay before new faction starts spawning
 	_update_color()
 	print("%s captured by %s!" % [zone_name, owner_faction.faction_name])
 	EventBus.zone_captured.emit(self, owner_faction)
