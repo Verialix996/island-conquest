@@ -17,12 +17,15 @@ The world is a randomly generated continent divided into provinces. Multiple AI 
 - **Territory control** — capture zones, factions fight over them in real time
 - **Procedural world** — Voronoi hex map with noise-based terrain, dice resource numbers (Catan-style), organic province shapes
 - **4X strategy map** — turn-based, AP system, dice rolls for resource production
-- **Commander tokens** — move across hexes, declare attacks, get destroyed on loss
-- **Building system** — Barracks, Wall, Turret, Energy Plant per hex
-- **Full faction simulation** — 5 factions (Player, Red, Blue, Orange, Barbarian) with BFS expansion AI
-- **Diplomacy** — war, peace, alliance; player diplomacy panel
+- **Commander tokens** — move across hexes, declare attacks; army strength grows by recruiting each turn
+- **Building system** — Barracks, Wall, Turret, Energy Plant per hex; each has physical battlefield effects
+- **Faction traits** — 10-trait pool (Aggressive, Expansionist, Builder, Militarist, Pacifist, etc.); 3 randomly assigned per AI faction at game start; drive all AI behaviour
+- **Full faction simulation** — 5 factions with BFS expansion, trait-driven war/peace/building decisions, and event-driven AI
+- **Diplomacy** — war, peace, alliance; player diplomacy panel; AI peace offers based on faction traits
 - **Battle transition** — map attack → 3D shooter scene → result applied back to map
-- **Ticket-based respawn** — 10 tickets per side; zone spawning consumes tickets
+- **Ticket-based respawn** — base 10 tickets per side + commander army strength; building effects modify further
+- **Trade exchange** — spend 2 trade resources to gain 1 of any other resource via Map HUD
+- **Event log** — scrolling in-map feed of AI actions (wars declared, territory captured, peace made, Barbarian spawns, buildings placed)
 
 ---
 
@@ -82,11 +85,8 @@ Runtime procedural cover, zone placement, faction starting positions, runtime na
 ### ✅ Milestone 7 — 4X Map Phase
 Voronoi hex map, turn manager, resource system, province info panel, commander tokens, buildings, diplomacy, attack → battle transition, Barbarian faction, AI director, win/lose conditions.
 
-### 🔄 Milestone 8 — Full Faction Simulation *(in progress)*
-- AI peace offers and de-escalation
-- Event log feed (visible AI actions)
-- AI building placement
-- World evolves meaningfully when player is idle
+### ✅ Milestone 8 — Full Faction Simulation
+Faction traits, commander armies, building battlefield effects, commander defeat/retreat flow, trade exchange UI, trait-driven AI war/peace/expansion/building, event log.
 
 ### Milestone 9 — Full Diplomacy
 Player diplomatic messages, treaties (ceasefire / alliance / trade / vassalage), faction agendas (expansionist / isolationist / opportunist), betrayal, coalition building, faction collapse. Begin replacing placeholder art with Blender low-poly models.

@@ -7,6 +7,20 @@ const FACTION_BLUE      = preload("res://scripts/resources/faction_blue.tres")
 const FACTION_ORANGE    = preload("res://scripts/resources/faction_orange.tres")
 const FACTION_BARBARIAN = preload("res://scripts/resources/faction_barbarian.tres")
 
+# ─── Trait pool ────────────────────────────────────────────────────────────────
+const ALL_TRAITS: Array = [
+	preload("res://scripts/resources/traits/trait_aggressive.tres"),
+	preload("res://scripts/resources/traits/trait_expansionist.tres"),
+	preload("res://scripts/resources/traits/trait_builder.tres"),
+	preload("res://scripts/resources/traits/trait_trader.tres"),
+	preload("res://scripts/resources/traits/trait_diplomatic.tres"),
+	preload("res://scripts/resources/traits/trait_isolationist.tres"),
+	preload("res://scripts/resources/traits/trait_militarist.tres"),
+	preload("res://scripts/resources/traits/trait_opportunist.tres"),
+	preload("res://scripts/resources/traits/trait_pacifist.tres"),
+	preload("res://scripts/resources/traits/trait_zealot.tres"),
+]
+
 # ─── State ─────────────────────────────────────────────────────────────────────
 var current_round: int = 1
 var ap_remaining:  int = 3
@@ -41,7 +55,11 @@ func start_game() -> void:
 	_turn_order = [FACTION_PLAYER, FACTION_RED, FACTION_BLUE, FACTION_ORANGE, FACTION_BARBARIAN]
 	_turn_index = 0
 	_create_commanders()
+	_assign_traits()
 	_begin_turn()
+
+func get_all_factions() -> Array:
+	return [FACTION_PLAYER, FACTION_RED, FACTION_BLUE, FACTION_ORANGE, FACTION_BARBARIAN]
 
 func _create_commanders() -> void:
 	commanders.clear()
@@ -123,6 +141,7 @@ func _begin_turn() -> void:
 		var cd := c as CommanderData
 		if cd and cd.owner_faction == faction:
 			cd.has_attacked = false
+	_recruit_for(faction)
 	ap_remaining = 3
 
 	var roll := randi_range(1, 6) + randi_range(1, 6)
@@ -210,6 +229,20 @@ func destroy_commander(commander: CommanderData) -> void:
 	commanders.erase(commander)
 	EventBus.commander_destroyed.emit(commander)
 
+# Called when a commander loses a battle — army wiped, commander retreats to capital.
+# Commander stays alive; only erased if no friendly province exists.
+func defeat_commander(cmd: CommanderData) -> void:
+	cmd.strength = 0
+	cmd.has_attacked = false
+	for p: ProvinceData in ProvinceGrid.provinces:
+		if ProvinceGrid.get_hex_owner(p.seed_hex) == cmd.owner_faction:
+			cmd.current_hex = p.seed_hex
+			EventBus.commander_moved.emit(cmd, p.seed_hex)
+			return
+	# No friendly territory left — commander is eliminated
+	commanders.erase(cmd)
+	EventBus.commander_destroyed.emit(cmd)
+
 func _find_commander(faction: FactionData) -> CommanderData:
 	for c in commanders:
 		var cd := c as CommanderData
@@ -234,6 +267,45 @@ func _respawn_commanders_for(faction: FactionData) -> void:
 			commanders.append(commander)
 			EventBus.commander_spawned.emit(commander)
 			return
+
+const BARBARIAN_TRAITS: Array = [
+	preload("res://scripts/resources/traits/trait_aggressive.tres"),
+	preload("res://scripts/resources/traits/trait_militarist.tres"),
+	preload("res://scripts/resources/traits/trait_zealot.tres"),
+]
+
+func _assign_traits() -> void:
+	for faction: FactionData in [FACTION_RED, FACTION_BLUE, FACTION_ORANGE]:
+		faction.traits.clear()
+		var pool: Array = ALL_TRAITS.duplicate()
+		pool.shuffle()
+		for i in 3:
+			faction.traits.append(pool[i])
+	# Barbarians always get the same three aggressive traits
+	FACTION_BARBARIAN.traits.clear()
+	FACTION_BARBARIAN.traits.assign(BARBARIAN_TRAITS)
+	# Player faction has no traits
+	FACTION_PLAYER.traits.clear()
+
+func _recruit_for(faction: FactionData) -> void:
+	for c in commanders:
+		var cmd := c as CommanderData
+		if cmd == null or cmd.owner_faction != faction:
+			continue
+		if ProvinceGrid.get_hex_owner(cmd.current_hex) != faction:
+			continue   # must be on own tile to recruit
+		var cap := CommanderData.RECRUIT_CAP
+		if faction.has_trait(FactionTrait.TraitType.MILITARIST):
+			for trait_item in faction.traits:
+				if trait_item.trait_type == FactionTrait.TraitType.MILITARIST:
+					cap += trait_item.recruit_bonus
+		var slots: int = mini(cap, cmd.max_strength - cmd.strength)
+		if slots <= 0:
+			continue
+		var manpower: int = faction.resources.get("manpower", 0)
+		var affordable: int = mini(slots, manpower)
+		cmd.strength += affordable
+		faction.resources["manpower"] = faction.resources.get("manpower", 0) - affordable
 
 func _terrain_to_resource_key(terrain: ProvinceData.TerrainType) -> String:
 	match terrain:

@@ -5,7 +5,9 @@ const ATTACK_STRENGTH := 5
 var _last_move_target: Vector2i = Vector2i(-1, -1)
 
 func take_turn(faction: FactionData) -> void:
+	_consider_peace(faction)
 	_consider_war_declarations(faction)
+	_consider_building(faction)
 
 	for commander: CommanderData in _get_all_commanders(faction):
 		_run_commander(faction, commander)
@@ -27,6 +29,20 @@ func _run_commander(faction: FactionData, commander: CommanderData) -> void:
 # ─── Diplomacy ────────────────────────────────────────────────────────────────
 
 func _consider_war_declarations(faction: FactionData) -> void:
+	# PACIFIST never declares war
+	if faction.has_trait(FactionTrait.TraitType.PACIFIST):
+		return
+
+	var base_chance := 0.30
+	for trait_item in faction.traits:
+		base_chance += (trait_item as FactionTrait).war_declaration_bias
+	base_chance = clamp(base_chance, 0.0, 1.0)
+
+	var faction_province_count: int = 0
+	for p: ProvinceData in ProvinceGrid.provinces:
+		if p.owner_faction == faction:
+			faction_province_count += 1
+
 	var candidates: Dictionary = {}
 	for coord: Vector2i in ProvinceGrid.hex_ownership:
 		if ProvinceGrid.get_hex_owner(coord) != faction:
@@ -38,9 +54,71 @@ func _consider_war_declarations(faction: FactionData) -> void:
 			candidates[owner] = true
 
 	for neighbor_faction: FactionData in candidates:
-		if not DiplomacyManager.are_at_war(faction, neighbor_faction):
-			if randf() < 0.30:
-				DiplomacyManager.declare_war(faction, neighbor_faction)
+		if DiplomacyManager.are_at_war(faction, neighbor_faction):
+			continue
+		# OPPORTUNIST only targets factions with fewer provinces than themselves
+		if faction.has_trait(FactionTrait.TraitType.OPPORTUNIST):
+			var target_count: int = 0
+			for p: ProvinceData in ProvinceGrid.provinces:
+				if p.owner_faction == neighbor_faction:
+					target_count += 1
+			if target_count >= faction_province_count:
+				continue
+		if randf() < base_chance:
+			DiplomacyManager.declare_war(faction, neighbor_faction)
+
+func _consider_peace(faction: FactionData) -> void:
+	if faction == TurnManager.FACTION_BARBARIAN:
+		return
+	var peace_bias := 0.0
+	for trait_item in faction.traits:
+		peace_bias += (trait_item as FactionTrait).peace_bias
+	if peace_bias <= 0.0:
+		return
+	for other in TurnManager.get_all_factions():
+		if other == faction:
+			continue
+		if DiplomacyManager.are_at_war(faction, other) and randf() < peace_bias:
+			DiplomacyManager.offer_peace(faction, other)
+
+func _consider_building(faction: FactionData) -> void:
+	if not faction.has_trait(FactionTrait.TraitType.BUILDER) and \
+	   not faction.has_trait(FactionTrait.TraitType.MILITARIST):
+		return
+
+	# Collect owned hexes without a building
+	var candidates: Array[Vector2i] = []
+	for coord: Vector2i in ProvinceGrid.hex_ownership:
+		if ProvinceGrid.get_hex_owner(coord) != faction:
+			continue
+		if ProvinceGrid.get_hex_building(coord) != null:
+			continue
+		candidates.append(coord)
+
+	if candidates.is_empty():
+		return
+
+	# Pick a building type by trait
+	var prefer_barracks: bool = faction.has_trait(FactionTrait.TraitType.MILITARIST)
+	var building_type: StringName = &"barracks" if prefer_barracks else &"barracks"
+	var cost: Dictionary = { "manpower": 20 }
+
+	if not TurnManager.can_afford(faction, cost):
+		return
+
+	var target_coord: Vector2i = candidates[randi() % candidates.size()]
+	TurnManager.spend_resources(faction, cost)
+
+	var b := BuildingData.new()
+	b.building_type        = building_type
+	b.building_name        = "Barracks"
+	b.description          = "+3 garrison"
+	b.cost                 = cost
+	b.extra_defender_units = 3
+	b.defense_bonus        = 0
+	b.income_bonus         = 0
+	ProvinceGrid.place_building(target_coord, b)
+	EventBus.province_building_added.emit(ProvinceGrid.get_province_for_hex(target_coord))
 
 # ─── Action selection ─────────────────────────────────────────────────────────
 
@@ -49,8 +127,10 @@ func _take_best_action(faction: FactionData, commander: CommanderData,
 		move_target: Vector2i) -> String:
 	var pos := commander.current_hex
 
-	# Priority 1 — attack an adjacent enemy hex (costs 2 AP)
-	if TurnManager.ap_remaining >= 2:
+	var prefer_expand: bool = faction.has_trait(FactionTrait.TraitType.EXPANSIONIST)
+
+	# Priority 1 (or 2 for EXPANSIONIST) — attack an adjacent enemy hex (costs 2 AP)
+	if not prefer_expand and TurnManager.ap_remaining >= 2:
 		for nb: Vector2i in ProvinceGrid.get_hex_neighbors(pos):
 			var owner: FactionData = ProvinceGrid.get_hex_owner(nb)
 			if owner == null or owner == faction:
@@ -60,12 +140,23 @@ func _take_best_action(faction: FactionData, commander: CommanderData,
 			_do_attack(faction, commander, nb, owner)
 			return "attacked"
 
-	# Priority 2 — claim an adjacent neutral hex (costs 1 AP)
+	# Priority 1 for EXPANSIONIST, priority 2 otherwise — claim adjacent neutral (costs 1 AP)
 	if TurnManager.ap_remaining >= 1:
 		for nb: Vector2i in ProvinceGrid.get_hex_neighbors(pos):
 			if ProvinceGrid.get_hex_owner(nb) == null:
 				_do_claim(faction, commander, nb)
 				return "claimed"
+
+	# EXPANSIONIST attack pass (after claiming neutrals)
+	if prefer_expand and TurnManager.ap_remaining >= 2:
+		for nb: Vector2i in ProvinceGrid.get_hex_neighbors(pos):
+			var owner: FactionData = ProvinceGrid.get_hex_owner(nb)
+			if owner == null or owner == faction:
+				continue
+			if not DiplomacyManager.are_at_war(faction, owner):
+				continue
+			_do_attack(faction, commander, nb, owner)
+			return "attacked"
 
 	# Priority 3 — step toward the cached target; recalculate only when it runs out
 	if TurnManager.ap_remaining >= 1:

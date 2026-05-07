@@ -28,6 +28,19 @@ func offer_peace(initiator: FactionData, target: FactionData) -> void:
 func propose_alliance(initiator: FactionData, target: FactionData) -> void:
 	_relations[_key(initiator, target)] = Relation.ALLIANCE
 
+const TRADE_COST := 2   # trade units to spend per 1 unit of another resource
+
+func can_exchange(faction: FactionData) -> bool:
+	return faction.resources.get("trade", 0) >= TRADE_COST
+
+func exchange_trade(faction: FactionData, target_resource: String) -> bool:
+	if not can_exchange(faction):
+		return false
+	faction.resources["trade"] -= TRADE_COST
+	faction.resources[target_resource] = faction.resources.get(target_resource, 0) + 1
+	EventBus.resources_changed.emit(faction)
+	return true
+
 func reset_state() -> void:
 	_relations.clear()
 

@@ -28,8 +28,8 @@ func _generate() -> void:
 	_place_cover()
 	if BattleContext.is_battle_mode():
 		_place_zones()
+		await _spawn_battle_units()   # may place walls; bake happens after
 		_bake_navmesh()
-		_spawn_battle_units()
 	else:
 		_place_zones()
 		_bake_navmesh()
@@ -165,6 +165,8 @@ func _spawn_battle_units() -> void:
 	tracker.set_script(BATTLE_TRACKER_GD)
 	tracker.add_to_group("battle_tracker")
 	get_parent().add_child(tracker)
+	tracker.player_tickets = 10 + BattleContext.player_commander_strength
+	tracker.enemy_tickets  = 10 + BattleContext.enemy_commander_strength
 
 	await get_tree().process_frame
 	var province: ProvinceData = BattleContext.pending_province
@@ -208,6 +210,83 @@ func _spawn_battle_units() -> void:
 			base_pos = Vector3.ZERO
 		var offset := Vector3(randf_range(-2.0, 2.0), 0.0, randf_range(-2.0, 2.0))
 		unit.global_position = Vector3(base_pos.x + offset.x, 1.1, base_pos.z + offset.z)
+
+	_apply_building_effects(enemy_faction, enemy_zone_nodes, tracker)
+
+# ── Building battlefield effects ──────────────────────────────────────────────
+
+func _apply_building_effects(enemy_faction: FactionData, enemy_zones: Array, tracker: Node) -> void:
+	var building: BuildingData = BattleContext.contested_hex_building
+	if building == null:
+		return
+
+	match building.building_type:
+		&"barracks":
+			_spawn_extra_garrison(enemy_faction, enemy_zones, building.extra_defender_units)
+		&"wall":
+			_spawn_walls(enemy_zones)
+		&"turret":
+			_spawn_turret(enemy_faction, enemy_zones)
+		&"energy_plant":
+			# Defender of the contested hex gets the ticket bonus
+			if BattleContext.is_defense:
+				tracker.player_tickets += 2   # player is defending
+			else:
+				tracker.enemy_tickets  += 2   # enemy is defending their own hex
+
+func _spawn_extra_garrison(enemy_faction: FactionData, enemy_zones: Array, count: int) -> void:
+	var base_pos := Vector3.ZERO
+	if not enemy_zones.is_empty():
+		var z: Node3D = enemy_zones[randi() % enemy_zones.size()]
+		base_pos = z.global_position
+	for i in count:
+		var unit := ENEMY_MELEE.instantiate()
+		unit.set("faction", enemy_faction)
+		get_parent().add_child(unit)
+		var ox := randf_range(-2.0, 2.0)
+		var oz := randf_range(-2.0, 2.0)
+		unit.global_position = Vector3(base_pos.x + ox, 1.1, base_pos.z + oz)
+
+func _spawn_walls(enemy_zones: Array) -> void:
+	var wall_shape := BoxShape3D.new()
+	wall_shape.size = Vector3(10.0, 2.0, 0.5)
+	for zone: Node3D in enemy_zones:
+		var c := zone.global_position
+		_place_wall_segment(wall_shape, Vector3(c.x,       c.y + 1.0, c.z + 6.0), 0.0)
+		_place_wall_segment(wall_shape, Vector3(c.x,       c.y + 1.0, c.z - 6.0), 0.0)
+		_place_wall_segment(wall_shape, Vector3(c.x + 6.0, c.y + 1.0, c.z),       90.0)
+		_place_wall_segment(wall_shape, Vector3(c.x - 6.0, c.y + 1.0, c.z),       90.0)
+
+func _place_wall_segment(shape: BoxShape3D, pos: Vector3, rot_y: float) -> void:
+	var body := StaticBody3D.new()
+	body.position = pos
+	body.rotation_degrees.y = rot_y
+
+	var mesh_inst := MeshInstance3D.new()
+	var box := BoxMesh.new()
+	box.size = Vector3(10.0, 2.0, 0.5)
+	mesh_inst.mesh = box
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.50, 0.45, 0.40)
+	mesh_inst.set_surface_override_material(0, mat)
+
+	var col := CollisionShape3D.new()
+	col.shape = shape
+
+	body.add_child(mesh_inst)
+	body.add_child(col)
+	_nav_region.add_child(body)
+
+func _spawn_turret(enemy_faction: FactionData, enemy_zones: Array) -> void:
+	if enemy_zones.is_empty():
+		return
+	var zone: Node3D = enemy_zones[randi() % enemy_zones.size()]
+	var unit := ENEMY_RANGED.instantiate()
+	unit.set("faction",         enemy_faction)
+	unit.set("move_speed",      0.1)
+	unit.set("detection_range", 30.0)
+	get_parent().add_child(unit)
+	unit.global_position = Vector3(zone.global_position.x, 1.1, zone.global_position.z)
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 

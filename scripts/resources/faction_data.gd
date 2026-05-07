@@ -17,7 +17,15 @@ class_name FactionData
 # Runtime state — reset each new game, NOT saved to .tres
 var resources: Dictionary = { "manpower": 0, "oil": 0, "steel": 0, "trade": 0 }
 var owned_provinces: Array = []   # Array[ProvinceData] — untyped to avoid circular dependency
+var traits: Array = []            # Array[FactionTrait], assigned at game start; empty for player
 
 func reset_runtime_state() -> void:
 	resources = { "manpower": 0, "oil": 0, "steel": 0, "trade": 0 }
 	owned_provinces.clear()
+	traits.clear()
+
+func has_trait(t: FactionTrait.TraitType) -> bool:
+	for trait_item in traits:
+		if trait_item.trait_type == t:
+			return true
+	return false

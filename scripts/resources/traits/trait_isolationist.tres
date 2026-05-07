@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="FactionTrait" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/faction_trait.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+trait_type = 5
+trait_name = "Isolationist"
+description = "This faction rarely starts wars and prefers to stay within its own borders."
+war_declaration_bias = -0.3
+expansion_priority = false
+build_priority = false
+trade_active = false
+recruit_bonus = 0
+peace_bias = 0.2

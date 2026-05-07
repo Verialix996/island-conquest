@@ -1,6 +1,6 @@
 # Island Conquest — Game Systems Reference
 
-Current state of every implemented system. Updated as of Milestone 7.
+Current state of every implemented system. Updated as of Milestone 8.
 
 ---
 
@@ -116,9 +116,14 @@ The 3D shooter scene (`scenes/battle/main_world.tscn`) is the tactical layer.
 - Result is reported back to `BattleContext.finish_battle(won)`.
 - **Script:** `scenes/battle/battle_win_detector.gd`
 
+**Ticket system (M8 update):**
+- Base tickets = 10 + commander army strength for each side.
+- Building effects apply on top: Energy Plant +2 tickets to defender; Barracks +3 garrison units; Wall spawns box obstacles around enemy zones (navmesh rebaked); Turret spawns a near-stationary ranged unit with detection range 30.
+
 **Post-battle (map phase):**
-- Win: attacker captures the contested hex; defender's commander (if any) is destroyed and respawns next turn.
-- Lose: defender holds the hex; attacker's commander is destroyed.
+- Win: attacker captures the contested hex; losing commander's army is wiped (strength → 0) and the commander teleports to a friendly capital.
+- Lose: defender holds the hex; attacking commander retreats the same way.
+- A commander with no friendly province left is eliminated permanently.
 
 ---
 
@@ -179,21 +184,33 @@ Four resource types per faction:
 - Rendered as colored circles on the hex map.
 - Click to select, click adjacent hex to move (1 AP).
 - **Has-attacked flag** resets each turn.
-- On battle loss: commander is destroyed. Respawn at seed hex next turn.
+- **Army strength:** commanders have `strength` (0–10). At the start of their faction's turn, while standing on a friendly hex, they recruit up to 2 units (costs 1 manpower each). Militarist trait adds extra recruit capacity.
+- **Strength adds to battle tickets:** entering battle grants `strength` extra tickets to that side.
+- **On defeat:** army wiped to 0, commander teleports to any friendly capital. Eliminated only if no friendly territory remains. Respawns with 0 strength next turn if they had no commander.
 - **Script:** `scenes/map/commander_token.gd`, **Data:** `scripts/resources/commander_data.gd`
 
 ### Building System
 
 One building slot per hex. Buildings cost resources and provide bonuses.
 
-| Building | Effect |
-|---|---|
-| Barracks | +garrison strength in battle, +income bonus |
-| Wall | +defensive cover in battle |
-| Turret | +auto-turret in battle scene |
-| Energy Plant | +income bonus |
+| Building | Cost | Map effect | Battlefield effect |
+|---|---|---|---|
+| Barracks | 20 manpower | — | +3 extra garrison units spawned near defender zones |
+| Wall | 15 steel | — | 4 box obstacles placed around each defender zone |
+| Turret | 10 steel + 10 oil | — | 1 stationary ranged unit at zone center (range 30, nearly immobile) |
+| Energy Plant | 20 oil | +5 income | +2 tickets to defending side |
 
+- Buildings placed by the player via the Province Info Panel (1 AP cost).
+- AI Builder/Militarist factions place Barracks automatically when they can afford it.
+- Battlefield effects are applied by `WorldGenerator._apply_building_effects()` after garrison is spawned. Walls are added before the navmesh bake so pathfinding routes around them.
 - **Script:** `scenes/map/province_info_panel.gd`, **Data:** `scripts/resources/building_data.gd`
+
+### Trade Exchange
+
+- **Rate:** 2 trade resource → 1 of any other resource (manpower / steel / oil).
+- Player accesses this via the **Trade** button in the Map HUD top bar, which opens a small popup.
+- Buttons are disabled when the player has fewer than 2 trade.
+- **Autoload:** `scripts/autoloads/diplomacy_manager.gd` (`exchange_trade`, `can_exchange`)
 
 ### Diplomacy System
 
@@ -221,16 +238,33 @@ AI reactions are handled by AIDirector based on aggression values and existing w
 
 Controls Red, Blue, Orange, and Barbarian factions each turn.
 
-**Decision logic per turn:**
-1. BFS from owned hexes to find the nearest unclaimed or enemy hex.
-2. Move commander toward target.
-3. Declare attack if adjacent to a valid target and AP allows.
-4. Cache BFS paths to avoid re-computing every frame (cache invalidated on map change).
+**Each turn runs in this order:**
+1. `_consider_peace` — trait-driven peace offers (DIPLOMATIC / TRADER factions).
+2. `_consider_war_declarations` — trait-modified war chance against neighboring factions.
+3. `_consider_building` — BUILDER / MILITARIST factions spend resources on Barracks.
+4. Commander action loop: move → claim neutral → attack enemy, spending AP until exhausted.
+
+**War declaration logic:**
+- Base chance 0.30, modified by each trait's `war_declaration_bias`.
+- PACIFIST never declares war.
+- OPPORTUNIST only targets factions with fewer provinces than itself.
+- Barbarian is excluded — always at war.
+
+**Expansion priority:**
+- Default: attack adjacent enemies first (priority 1), then claim neutral hexes (priority 2).
+- EXPANSIONIST trait reverses this: claim neutrals first, then attack.
+
+**Peace offers:**
+- Factions sum their traits' `peace_bias`. If > 0, they roll each turn against each enemy faction.
+- Barbarian faction is excluded from peace offers entirely.
+
+**Building placement:**
+- BUILDER or MILITARIST factions pick a random owned hex without a building and place a Barracks when they can afford 20 manpower. One building per turn.
 
 **Barbarian faction:**
 - Created when a 7 is rolled (Catan-style map event).
-- Always at war with everyone.
-- Expands into neutral hexes only (never initiates war on player or AI unless adjacent).
+- Always at war with everyone; never receives or sends peace offers.
+- Expands into neutral hexes only via the standard BFS commander loop.
 
 - **Autoload:** `scripts/autoloads/ai_director.gd`
 
@@ -245,7 +279,19 @@ Procedurally builds the battle scene at runtime.
 - Splits zones between player and enemy faction based on proximity to player start.
 - Spawns initial garrison units for the enemy faction near their zones.
 - Moves the player character to a friendly zone.
-- Bakes the navigation mesh with `PARSED_GEOMETRY_BOTH`, agent radius 1.0.
+- Applies building effects from `BattleContext.contested_hex_building` (see below).
+- Bakes the navigation mesh **after** walls are placed, so pathfinding routes around them.
+
+**Building effects (`_apply_building_effects`):**
+
+| Building | Effect in battle scene |
+|---|---|
+| Barracks | Spawns 3 extra melee units near enemy zones |
+| Wall | Places 4 `StaticBody3D` box obstacles around each enemy zone perimeter |
+| Turret | Spawns a near-stationary `enemy_ranged` unit at the enemy zone center (detection range 30, move speed 0.1) |
+| Energy Plant | Adds +2 tickets to the defending side's `BattleTracker` |
+
+Walls are added as children of the `NavigationRegion3D` before the navmesh bake so agents route around them. Units spawned by building effects are assigned the enemy faction via `unit.set("faction", ...)` since `PackedScene.instantiate()` returns a base `Node`.
 
 All settings are `@export` variables — editable in the Inspector.
 - **Script:** `scenes/battle/world_generator.gd`
@@ -275,6 +321,54 @@ Each faction is a Godot `Resource` (`.tres` file) with:
 - `aggression: float` (0.0 – 1.0, used by AI for war decisions)
 - `resources: Dictionary` (manpower / oil / steel / trade counts)
 - `relationships: Dictionary` (key = other faction name, value = -1.0 to 1.0)
+- `traits: Array` (Array[FactionTrait], 3 assigned at game start)
+
+Helper: `has_trait(TraitType) -> bool` — used by AIDirector and TurnManager.
 
 Faction files: `faction_player.tres`, `faction_red.tres`, `faction_blue.tres`, `faction_orange.tres`, `faction_barbarian.tres`
 - **Script:** `scripts/resources/faction_data.gd`
+
+---
+
+## 11. Faction Trait System
+
+Each AI faction is assigned 3 random traits from a pool of 10 at game start. Traits are Godot `Resource` instances with float/bool modifiers read by AIDirector and TurnManager. The player faction has no traits.
+
+| Trait | Key modifiers |
+|---|---|
+| Aggressive | `war_declaration_bias +0.4` |
+| Expansionist | `expansion_priority true`, `war_declaration_bias +0.1` |
+| Builder | `build_priority true` |
+| Trader | `trade_active true`, `peace_bias +0.3` |
+| Diplomatic | `war_declaration_bias -0.2`, `peace_bias +0.4` |
+| Isolationist | `war_declaration_bias -0.3` |
+| Militarist | `recruit_bonus +2`, `war_declaration_bias +0.2` |
+| Opportunist | `war_declaration_bias +0.15` (only vs. weaker factions) |
+| Pacifist | `war_declaration_bias -0.4`, `peace_bias +0.5` |
+| Zealot | `war_declaration_bias +0.5` |
+
+- Barbarian faction always gets Aggressive + Militarist + Zealot (fixed, not random).
+- `recruit_bonus` is added to `CommanderData.RECRUIT_CAP` for the MILITARIST trait.
+- **Script:** `scripts/resources/faction_trait.gd`
+- **Instances:** `scripts/resources/traits/trait_*.tres` (10 files)
+
+---
+
+## 12. Event Log
+
+A scrolling feed in the bottom-left of the Map HUD that records significant world events during the AI turns. Maximum 12 entries; oldest entry is removed when the limit is exceeded.
+
+**Logged events:**
+
+| Event | Color |
+|---|---|
+| War declared between two factions | Red |
+| Peace made between two factions | Green |
+| Province capital captured (seed hex only) | Faction color |
+| New round started | Grey (separator) |
+| Barbarian commander spawned | Orange |
+| AI faction places a building | Blue |
+
+- Player actions are not logged (the player sees them directly).
+- Only hex captures on province seed hexes are logged (avoids noise from individual tile flips).
+- **Script:** `scenes/map/map_hud.gd` (`_build_event_log`, `_log`, event handler methods)
