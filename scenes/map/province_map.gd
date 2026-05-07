@@ -38,6 +38,7 @@ func _ready() -> void:
 	EventBus.commander_moved.connect(_on_commander_moved)
 	EventBus.commander_spawned.connect(_on_commander_spawned)
 	EventBus.commander_destroyed.connect(_on_commander_destroyed)
+	EventBus.battle_choice_needed.connect(_on_battle_choice_needed)
 
 	if BattleContext.returning_from_battle:
 		BattleContext.returning_from_battle = false
@@ -318,3 +319,149 @@ func _show_end_screen(player_won: bool, reason: String) -> void:
 	btn.custom_minimum_size = Vector2(180, 46)
 	btn.pressed.connect(func(): get_tree().reload_current_scene())
 	vbox.add_child(btn)
+
+# ─── Battle choice dialog ─────────────────────────────────────────────────────
+const BATTLE_ATTACK_STRENGTH := 5
+
+func _on_battle_choice_needed(province: ProvinceData, is_defense: bool, attacker: FactionData) -> void:
+	if _game_over:
+		return
+	var garrison := ProvinceGrid.get_province_garrison(province)
+
+	var layer := CanvasLayer.new()
+	layer.layer = 5
+	add_child(layer)
+
+	var bg := ColorRect.new()
+	bg.color = Color(0, 0, 0, 0.65)
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.mouse_filter = Control.MOUSE_FILTER_STOP
+	layer.add_child(bg)
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(center)
+
+	var card := PanelContainer.new()
+	center.add_child(card)
+
+	var margin := MarginContainer.new()
+	for side in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
+		margin.add_theme_constant_override(side, 40)
+	card.add_child(margin)
+
+	var vbox2 := VBoxContainer.new()
+	vbox2.add_theme_constant_override("separation", 14)
+	vbox2.alignment = BoxContainer.ALIGNMENT_CENTER
+	margin.add_child(vbox2)
+
+	var title2 := Label.new()
+	title2.text = "BATTLE — %s" % province.province_name
+	title2.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title2.add_theme_font_size_override("font_size", 22)
+	vbox2.add_child(title2)
+
+	var sep3 := HSeparator.new()
+	vbox2.add_child(sep3)
+
+	var role := Label.new()
+	role.text = "Defending" if is_defense else "Attacking"
+	role.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	role.add_theme_font_size_override("font_size", 14)
+	role.add_theme_color_override("font_color", Color(0.85, 0.75, 0.45))
+	vbox2.add_child(role)
+
+	var stats2 := Label.new()
+	if is_defense:
+		stats2.text = "Your garrison: %d  vs  Attacker: %d" % [garrison, BATTLE_ATTACK_STRENGTH]
+	else:
+		stats2.text = "Your force: %d  vs  Garrison: %d" % [BATTLE_ATTACK_STRENGTH, garrison]
+	stats2.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	stats2.add_theme_font_size_override("font_size", 13)
+	vbox2.add_child(stats2)
+
+	var player_favored := (BATTLE_ATTACK_STRENGTH > garrison) if not is_defense else (garrison >= BATTLE_ATTACK_STRENGTH)
+	var odds_lbl := Label.new()
+	odds_lbl.text = "Auto-resolve outcome: %s" % ("Win" if player_favored else "Lose")
+	odds_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	odds_lbl.add_theme_font_size_override("font_size", 13)
+	odds_lbl.add_theme_color_override("font_color", Color(0.35, 0.9, 0.35) if player_favored else Color(0.9, 0.35, 0.35))
+	vbox2.add_child(odds_lbl)
+
+	var sep4 := HSeparator.new()
+	vbox2.add_child(sep4)
+
+	var hbox2 := HBoxContainer.new()
+	hbox2.alignment = BoxContainer.ALIGNMENT_CENTER
+	hbox2.add_theme_constant_override("separation", 20)
+	vbox2.add_child(hbox2)
+
+	var fight_btn := Button.new()
+	fight_btn.text = "Fight"
+	fight_btn.custom_minimum_size = Vector2(130, 42)
+	hbox2.add_child(fight_btn)
+
+	var auto_btn := Button.new()
+	auto_btn.text = "Auto-resolve"
+	auto_btn.custom_minimum_size = Vector2(130, 42)
+	hbox2.add_child(auto_btn)
+
+	fight_btn.pressed.connect(func():
+		layer.queue_free()
+		if is_defense:
+			BattleContext.start_defense_battle(
+				TurnManager.pending_defense_battle.province,
+				TurnManager.pending_defense_battle.attacker,
+				TurnManager.pending_defense_battle.hex
+			)
+		else:
+			BattleContext.start_battle(province, TurnManager.FACTION_PLAYER)
+	)
+
+	auto_btn.pressed.connect(func():
+		layer.queue_free()
+		_auto_resolve_battle(province, is_defense, attacker, garrison)
+	)
+
+func _auto_resolve_battle(province: ProvinceData, is_defense: bool, attacker: FactionData, garrison: int) -> void:
+	var player_won: bool = (BATTLE_ATTACK_STRENGTH > garrison) if not is_defense else (garrison >= BATTLE_ATTACK_STRENGTH)
+	var target_hex: Vector2i
+	if is_defense:
+		target_hex = TurnManager.pending_defense_battle.get("hex", province.seed_hex)
+	else:
+		target_hex = BattleContext.target_hex
+		BattleContext.target_hex = Vector2i(-1, -1)
+
+	if is_defense:
+		if not player_won:
+			ProvinceGrid.capture_hex(target_hex, attacker)
+			var player_cmd := TurnManager.get_commander_at(target_hex)
+			if player_cmd != null:
+				TurnManager.destroy_commander(player_cmd)
+		else:
+			var ai_cmd := TurnManager._find_commander(attacker)
+			if ai_cmd != null:
+				TurnManager.destroy_commander(ai_cmd)
+	else:
+		if player_won:
+			ProvinceGrid.capture_hex(target_hex, TurnManager.FACTION_PLAYER)
+			var defender_cmd := TurnManager.get_commander_at(target_hex)
+			if defender_cmd != null:
+				TurnManager.destroy_commander(defender_cmd)
+		else:
+			var player_cmd := TurnManager._find_commander(TurnManager.FACTION_PLAYER)
+			if player_cmd != null:
+				TurnManager.destroy_commander(player_cmd)
+
+	province.is_contested    = false
+	province.attacker_faction = null
+	for coord in province.hex_tiles:
+		if tile_nodes.has(coord):
+			tile_nodes[coord].refresh()
+	_check_victory_condition()
+
+	if is_defense:
+		TurnManager.resume_after_defense_battle()
+	else:
+		TurnManager.resume_after_battle()

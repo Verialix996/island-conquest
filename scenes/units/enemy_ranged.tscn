@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://by11e6xdq2pdu"]
 
-[ext_resource type="PackedScene" uid="uid://bjxq6qeucgwg2" path="res://scenes/enemies/enemy_base.tscn" id="1_1phqv"]
-[ext_resource type="Script" uid="uid://doi5d0m4kvyxr" path="res://scenes/enemies/enemy_ranged.gd" id="2_w85hd"]
-[ext_resource type="Script" uid="uid://b88k4iy1p66m3" path="res://scripts/health_component.gd" id="3_w85hd"]
+[ext_resource type="PackedScene" uid="uid://bjxq6qeucgwg2" path="res://scenes/units/enemy_base.tscn" id="1_1phqv"]
+[ext_resource type="Script" uid="uid://doi5d0m4kvyxr" path="res://scenes/units/enemy_ranged.gd" id="2_w85hd"]
+[ext_resource type="Script" uid="uid://b88k4iy1p66m3" path="res://scripts/components/health_component.gd" id="3_w85hd"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1hukp"]
 albedo_color = Color(0.5548993, 0.0005303046, 0.62441146, 1)

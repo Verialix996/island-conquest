@@ -96,9 +96,24 @@ func _on_debuffs_updated(debuffs: Dictionary) -> void:
 
 func _on_died() -> void:
 	if BattleContext.is_battle_mode():
-		BattleContext.finish_battle(false)   # player lost — defender keeps province
+		var tracker = get_tree().get_first_node_in_group("battle_tracker")
+		if tracker != null and tracker.use_player_ticket():
+			# Respawn at a friendly zone
+			global_position = _find_respawn_position()
+			health_component.reset_all()
+			health_changed.emit(health_component.parts)
+		else:
+			BattleContext.finish_battle(false)
 	else:
 		get_tree().reload_current_scene()
+
+func _find_respawn_position() -> Vector3:
+	for z in get_tree().get_nodes_in_group("battle_zone"):
+		var faction = z.get("owner_faction")
+		if faction != null and faction.get("is_player_faction"):
+			var offset := Vector3(randf_range(-3.0, 3.0), 0.0, randf_range(-3.0, 3.0))
+			return z.global_position + offset
+	return Vector3(0.0, 1.1, 0.0)
 
 func _on_weapon_empty() -> void:
 	# Auto-switch to pistol (index 0) when out of mags

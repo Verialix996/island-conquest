@@ -1,6 +1,28 @@
-# Godot 4+ specific ignores
+# Godot 4+ generated cache (never commit)
 .godot/
-/android/
 
-# Claude Code instructions (local only)
+# Export targets
+/android/
+/ios/
+/web/
+/windows/
+/linux/
+/macos/
+
+# Export presets (contain local paths)
+export_presets.cfg
+
+# Godot editor logs
+*.log
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Claude Code (local dev tool config, not game code)
 CLAUDE.md
+.claude/
+
+# Docs (design notes, not source)
+docs/

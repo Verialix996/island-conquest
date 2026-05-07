@@ -1,7 +1,7 @@
 extends Area3D
 
-const ENEMY_MELEE = preload("res://scenes/enemies/enemy_base.tscn")
-const ENEMY_RANGED = preload("res://scenes/enemies/enemy_ranged.tscn")
+const ENEMY_MELEE = preload("res://scenes/units/enemy_base.tscn")
+const ENEMY_RANGED = preload("res://scenes/units/enemy_ranged.tscn")
 
 @export var zone_name: String = "Zone"
 @export var owner_faction: FactionData = null
@@ -22,6 +22,7 @@ var bodies_in_zone: Array = []
 var spawned_units: Array = []
 
 func _ready() -> void:
+	add_to_group("battle_zone")
 	zone_visual = $ZoneVisual
 	mat = zone_visual.get_active_material(0).duplicate()
 	zone_visual.set_surface_override_material(0, mat)
@@ -90,6 +91,16 @@ func _try_spawn_unit() -> void:
 	spawned_units = spawned_units.filter(func(u): return is_instance_valid(u))
 	if spawned_units.size() >= max_units:
 		return
+	if BattleContext.is_battle_mode():
+		var tracker = get_tree().get_first_node_in_group("battle_tracker")
+		if tracker != null:
+			var is_player_side: bool = owner_faction != null and owner_faction.is_player_faction
+			if is_player_side:
+				if not tracker.use_player_ticket():
+					return
+			else:
+				if not tracker.use_enemy_ticket():
+					return
 	var scene = ENEMY_MELEE if randf() < 0.5 else ENEMY_RANGED
 	var unit = scene.instantiate()
 	unit.faction = owner_faction

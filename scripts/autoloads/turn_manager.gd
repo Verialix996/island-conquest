@@ -19,7 +19,8 @@ var _turn_index:  int = 0
 var commanders: Array = []   # Array[CommanderData]
 
 # Pending AI-vs-player battles; resolved at the start of the player's next turn
-var pending_defense: Array = []   # Array of {province, attacker, hex}
+var pending_defense: Array = []          # Array of {province, attacker, hex}
+var pending_defense_battle: Dictionary = {}  # The one currently being resolved (choice dialog)
 
 # ─── Public API ────────────────────────────────────────────────────────────────
 func reset_state() -> void:
@@ -30,6 +31,7 @@ func reset_state() -> void:
 	_turn_index = 0
 	commanders.clear()
 	pending_defense.clear()
+	pending_defense_battle = {}
 	# Give all factions a small starting stockpile
 	var start := { "manpower": 10, "oil": 5, "steel": 5, "trade": 5 }
 	for f in [FACTION_PLAYER, FACTION_RED, FACTION_BLUE, FACTION_ORANGE, FACTION_BARBARIAN]:
@@ -59,7 +61,7 @@ func end_player_turn() -> void:
 		return
 	for p: ProvinceData in ProvinceGrid.provinces:
 		if p.is_contested and p.attacker_faction == FACTION_PLAYER:
-			BattleContext.start_battle(p, FACTION_PLAYER)
+			EventBus.battle_choice_needed.emit(p, false, FACTION_PLAYER)
 			return
 	_finish_player_turn()
 
@@ -126,9 +128,26 @@ func _begin_turn() -> void:
 	var roll := randi_range(1, 6) + randi_range(1, 6)
 	last_roll  = roll
 
+	var affected: Array = []
 	for p: ProvinceData in ProvinceGrid.provinces:
-		if ProvinceGrid.get_hex_owner(p.seed_hex) == faction and p.dice_number == roll:
-			_collect(faction, p)
+		if p.dice_number == roll:
+			for coord: Vector2i in p.hex_tiles:
+				var tile_owner: FactionData = ProvinceGrid.get_hex_owner(coord)
+				if tile_owner == null:
+					continue
+				var terrain: ProvinceData.TerrainType = ProvinceGrid.hex_terrain.get(coord, ProvinceData.TerrainType.PLAINS)
+				var res_key := _terrain_to_resource_key(terrain)
+				var amount := 1
+				var building: BuildingData = ProvinceGrid.get_hex_building(coord)
+				if building != null:
+					amount += building.income_bonus
+				if coord == p.seed_hex:
+					amount *= 2
+				tile_owner.resources[res_key] = tile_owner.resources.get(res_key, 0) + amount
+				if not affected.has(tile_owner):
+					affected.append(tile_owner)
+	for f: FactionData in affected:
+		EventBus.resources_changed.emit(f)
 
 	# Roll of 7 is a global map event — no production, but spawns a Barbarian
 	if roll == 7:
@@ -147,8 +166,8 @@ func _begin_turn() -> void:
 			_trigger_next_defense()
 
 func _trigger_next_defense() -> void:
-	var battle: Dictionary = pending_defense.pop_front()
-	BattleContext.start_defense_battle(battle.province, battle.attacker, battle.hex)
+	pending_defense_battle = pending_defense.pop_front()
+	EventBus.battle_choice_needed.emit(pending_defense_battle.province, true, pending_defense_battle.attacker)
 
 # ─── Barbarian event ──────────────────────────────────────────────────────────
 func _spawn_barbarian_event() -> void:
@@ -205,22 +224,20 @@ func _respawn_commanders_for(faction: FactionData) -> void:
 		var cd := c as CommanderData
 		if cd and cd.owner_faction == faction:
 			return   # still has at least one commander
-	# Find any hex this faction owns and spawn there
-	for coord: Vector2i in ProvinceGrid.hex_ownership:
-		if ProvinceGrid.get_hex_owner(coord) == faction:
+	# Spawn at the seed hex (capital) of any province this faction owns
+	for p: ProvinceData in ProvinceGrid.provinces:
+		if p.owner_faction == faction:
 			var commander := CommanderData.new()
 			commander.commander_name = faction.faction_name
 			commander.owner_faction  = faction
-			commander.current_hex    = coord
+			commander.current_hex    = p.seed_hex
 			commanders.append(commander)
 			EventBus.commander_spawned.emit(commander)
 			return
 
-func _collect(faction: FactionData, province: ProvinceData) -> void:
-	var amount := ProvinceGrid.get_province_income(province)
-	match province.resource_type:
-		ProvinceData.ResourceType.MANPOWER: faction.resources["manpower"] += amount
-		ProvinceData.ResourceType.OIL:      faction.resources["oil"]      += amount
-		ProvinceData.ResourceType.STEEL:    faction.resources["steel"]    += amount
-		ProvinceData.ResourceType.TRADE:    faction.resources["trade"]    += amount
-	EventBus.resources_changed.emit(faction)
+func _terrain_to_resource_key(terrain: ProvinceData.TerrainType) -> String:
+	match terrain:
+		ProvinceData.TerrainType.MOUNTAINS: return "steel"
+		ProvinceData.TerrainType.DESERT:    return "oil"
+		ProvinceData.TerrainType.URBAN:     return "trade"
+		_:                                  return "manpower"

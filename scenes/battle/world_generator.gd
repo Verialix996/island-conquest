@@ -1,8 +1,8 @@
 extends Node
 
-const ZONE_SCENE   = preload("res://scenes/world/zone.tscn")
-const ENEMY_MELEE  = preload("res://scenes/enemies/enemy_base.tscn")
-const ENEMY_RANGED = preload("res://scenes/enemies/enemy_ranged.tscn")
+const ZONE_SCENE   = preload("res://scenes/battle/zone.tscn")
+const ENEMY_MELEE  = preload("res://scenes/units/enemy_base.tscn")
+const ENEMY_RANGED = preload("res://scenes/units/enemy_ranged.tscn")
 
 const FACTION_PLAYER = preload("res://scripts/resources/faction_player.tres")
 const FACTION_RED    = preload("res://scripts/resources/faction_red.tres")
@@ -27,6 +27,7 @@ func _generate() -> void:
 	_nav_region = get_parent().get_node("NavigationRegion3D")
 	_place_cover()
 	if BattleContext.is_battle_mode():
+		_place_zones()
 		_bake_navmesh()
 		_spawn_battle_units()
 	else:
@@ -78,17 +79,28 @@ func _place_zones() -> void:
 	var sorted = _zone_positions.duplicate()
 	sorted.sort_custom(func(a, b): return a.distance_to(player_pos) < b.distance_to(player_pos))
 
-	var ai_factions: Array[FactionData] = [FACTION_RED, FACTION_BLUE, FACTION_ORANGE]
-	var zone_index := 0
-
-	for pos in sorted:
-		var faction: FactionData
-		if zone_index == 0:
-			faction = FACTION_PLAYER
+	if BattleContext.is_battle_mode():
+		# Battle: first half of zones → player, second half → enemy faction
+		var enemy_faction: FactionData
+		if BattleContext.is_defense:
+			enemy_faction = BattleContext.attacker_faction
 		else:
-			faction = ai_factions[(zone_index - 1) % ai_factions.size()]
-		_spawn_zone(pos, faction, zone_index)
-		zone_index += 1
+			var prov: ProvinceData = BattleContext.pending_province
+			enemy_faction = prov.owner_faction if prov != null else null
+		var mid := sorted.size() / 2
+		for i in sorted.size():
+			_spawn_zone(sorted[i], FACTION_PLAYER if i < mid else enemy_faction, i)
+	else:
+		var ai_factions: Array[FactionData] = [FACTION_RED, FACTION_BLUE, FACTION_ORANGE]
+		var zone_index := 0
+		for pos in sorted:
+			var faction: FactionData
+			if zone_index == 0:
+				faction = FACTION_PLAYER
+			else:
+				faction = ai_factions[(zone_index - 1) % ai_factions.size()]
+			_spawn_zone(pos, faction, zone_index)
+			zone_index += 1
 
 func _spawn_zone(pos: Vector3, faction: FactionData, index: int) -> void:
 	var zone = ZONE_SCENE.instantiate()
@@ -101,6 +113,8 @@ func _spawn_zone(pos: Vector3, faction: FactionData, index: int) -> void:
 	_spawn_city_marker(pos, faction)
 
 func _spawn_city_marker(pos: Vector3, faction: FactionData) -> void:
+	if faction == null:
+		return
 	var mesh_inst = MeshInstance3D.new()
 	var cyl = CylinderMesh.new()
 	cyl.top_radius = 0.5
@@ -139,34 +153,61 @@ func _spawn_starting_units() -> void:
 			unit.global_position = Vector3(zone.global_position.x + offset.x, 1.1, zone.global_position.z + offset.z)
 
 # ── Battle mode: spawn province garrison as enemies ───────────────────────────
-const BATTLE_WIN_DETECTOR_GD = preload("res://scenes/world/battle_win_detector.gd")
+const BATTLE_WIN_DETECTOR_GD = preload("res://scenes/battle/battle_win_detector.gd")
+const BATTLE_TRACKER_GD      = preload("res://scenes/battle/battle_tracker.gd")
 
 func _spawn_battle_units() -> void:
 	var detector := Node.new()
 	detector.set_script(BATTLE_WIN_DETECTOR_GD)
 	get_parent().add_child(detector)
 
+	var tracker := Node.new()
+	tracker.set_script(BATTLE_TRACKER_GD)
+	tracker.add_to_group("battle_tracker")
+	get_parent().add_child(tracker)
+
 	await get_tree().process_frame
 	var province: ProvinceData = BattleContext.pending_province
 
-	# Defense battle: player defends against the AI attacker's troops
-	# Attack battle: player attacks the province's current garrison
 	var enemy_faction: FactionData
 	if BattleContext.is_defense:
 		enemy_faction = BattleContext.attacker_faction
 	else:
-		enemy_faction = province.owner_faction
+		enemy_faction = province.owner_faction if province != null else null
 
-	var count: int = ProvinceGrid.get_province_garrison(province)
+	var count: int = ProvinceGrid.get_province_garrison(province) if province != null else 3
 	if count <= 0:
 		count = 3
+
+	# Sort zones by faction so each side spawns at their own zones
+	var enemy_zone_nodes: Array = []
+	var player_zone_nodes: Array = []
+	for z in get_tree().get_nodes_in_group("battle_zone"):
+		if z.owner_faction == null:
+			continue
+		if z.owner_faction.is_player_faction:
+			player_zone_nodes.append(z)
+		else:
+			enemy_zone_nodes.append(z)
+
+	# Move player character to a player zone
+	var player_node = get_tree().get_first_node_in_group("player")
+	if player_node != null and not player_zone_nodes.is_empty():
+		var pz: Node3D = player_zone_nodes[0]
+		player_node.global_position = Vector3(pz.global_position.x, 1.1, pz.global_position.z)
+
 	for i in count:
 		var scene = ENEMY_MELEE if randf() < 0.5 else ENEMY_RANGED
 		var unit  = scene.instantiate()
 		unit.faction = enemy_faction
 		get_parent().add_child(unit)
-		var offset := Vector3(randf_range(-8.0, 8.0), 0.0, randf_range(-8.0, 8.0))
-		unit.global_position = Vector3(offset.x, 1.1, offset.z)
+		var base_pos: Vector3
+		if not enemy_zone_nodes.is_empty():
+			base_pos = enemy_zone_nodes[randi() % enemy_zone_nodes.size()].global_position
+		else:
+			base_pos = Vector3.ZERO
+		var offset := Vector3(randf_range(-2.0, 2.0), 0.0, randf_range(-2.0, 2.0))
+		unit.global_position = Vector3(base_pos.x + offset.x, 1.1, base_pos.z + offset.z)
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 

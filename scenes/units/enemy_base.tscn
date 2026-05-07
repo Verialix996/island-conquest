@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://bjxq6qeucgwg2"]
 
-[ext_resource type="Script" uid="uid://sve0lqjf648a" path="res://scenes/enemies/enemy_base.gd" id="1_qty17"]
+[ext_resource type="Script" uid="uid://sve0lqjf648a" path="res://scenes/units/enemy_base.gd" id="1_qty17"]
 [ext_resource type="AudioStream" uid="uid://bbvyoxplc03i1" path="res://assets/sounds/death_male.wav" id="2_pkqou"]
-[ext_resource type="Script" uid="uid://b88k4iy1p66m3" path="res://scripts/health_component.gd" id="3_satqt"]
+[ext_resource type="Script" uid="uid://b88k4iy1p66m3" path="res://scripts/components/health_component.gd" id="3_satqt"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rbebl"]
 albedo_color = Color(0.17596108, 0.3234396, 0.679836, 1)

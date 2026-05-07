@@ -24,6 +24,9 @@ var startup_timer: float = 0.3  # wait for NavigationAgent3D to sync after spawn
 
 func _ready() -> void:
 	add_to_group("enemy")
+	if faction != null:
+		var group_name: String = "green" if faction.is_player_faction else faction.faction_name.to_lower()
+		add_to_group(group_name)
 	nav_agent = $NavigationAgent3D
 	nav_agent.avoidance_enabled = true
 	attack_timer = $AttackTimer
@@ -116,11 +119,10 @@ func _find_nearest_hostile() -> Node3D:
 func _find_hostile_zone() -> Node:
 	var closest: Node = null
 	var closest_dist: float = INF
-	for zone_key in GameManager.zones:
-		var zone_owner = GameManager.zone_ownership.get(zone_key)
+	for zone in get_tree().get_nodes_in_group("battle_zone"):
+		var zone_owner = zone.get("owner_faction")
 		if zone_owner == null or zone_owner == faction:
 			continue
-		var zone = GameManager.zones[zone_key]
 		var dist = global_position.distance_to(zone.global_position)
 		if dist < closest_dist:
 			closest_dist = dist

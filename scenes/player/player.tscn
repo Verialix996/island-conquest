@@ -5,7 +5,7 @@
 [ext_resource type="AudioStream" uid="uid://csgok45ic8p5f" path="res://assets/sounds/grunt.ogg" id="3_gmlin"]
 [ext_resource type="PackedScene" uid="uid://clup8btwwqpeq" path="res://scenes/weapons/weapon_shotgun.tscn" id="4_lvxji"]
 [ext_resource type="PackedScene" uid="uid://cv77uh1qgimdq" path="res://scenes/weapons/weapon_rifle.tscn" id="5_75vfm"]
-[ext_resource type="Script" uid="uid://b88k4iy1p66m3" path="res://scripts/health_component.gd" id="5_p47bc"]
+[ext_resource type="Script" uid="uid://b88k4iy1p66m3" path="res://scripts/components/health_component.gd" id="5_p47bc"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_x7p2l"]
 albedo_color = Color(0.2065363, 0.49325317, 9.62615e-08, 1)

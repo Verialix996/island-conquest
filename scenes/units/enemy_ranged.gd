@@ -1,4 +1,4 @@
-extends "res://scenes/enemies/enemy_base.gd"
+extends "res://scenes/units/enemy_base.gd"
 
 @export var preferred_distance: float = 8.0
 @export var shoot_range: float = 15.0

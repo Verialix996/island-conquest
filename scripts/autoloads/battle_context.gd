@@ -1,7 +1,7 @@
 extends Node
 
 const MAP_SCENE    := "res://scenes/map/province_map.tscn"
-const BATTLE_SCENE := "res://scenes/world/main_world.tscn"
+const BATTLE_SCENE := "res://scenes/battle/main_world.tscn"
 
 var target_hex:            Vector2i     = Vector2i(-1, -1)
 var pending_province:      ProvinceData = null

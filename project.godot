@@ -17,13 +17,13 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-EventBus="*res://scripts/event_bus.gd"
+AIDirector="*uid://c6c0p8qnvyfkn"
+BattleContext="*uid://bcplwdjpen0su"
+DiplomacyManager="*uid://bpe8i8w1xktf2"
+EventBus="*uid://dvi1km5uswjpq"
 GameManager="*uid://csayxp04y2hrs"
 ProvinceGrid="*uid://cxkjqorerst41"
 TurnManager="*uid://ddrgo5r0xtv2d"
-DiplomacyManager="*uid://bpe8i8w1xktf2"
-BattleContext="*uid://bcplwdjpen0su"
-AIDirector="*uid://c6c0p8qnvyfkn"
 
 [input]
 

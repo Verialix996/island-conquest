@@ -27,6 +27,11 @@ func take_hit(damage: float, hit_chance_modifiers: Dictionary = {}) -> void:
 
 	debuffs_updated.emit(_calculate_debuffs())
 
+func reset_all() -> void:
+	for part in parts:
+		part.initialize()
+	debuffs_updated.emit(_calculate_debuffs())
+
 func heal_most_damaged(amount: float) -> void:
 	var worst: BodyPart = null
 	var worst_pct: float = 1.0

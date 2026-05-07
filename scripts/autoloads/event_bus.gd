@@ -55,3 +55,5 @@ signal war_declared(attacker: FactionData, target: FactionData)
 signal peace_made(initiator: FactionData, target: FactionData)
 @warning_ignore("unused_signal")
 signal diplomacy_panel_toggled
+@warning_ignore("unused_signal")
+signal battle_choice_needed(province: ProvinceData, is_defense: bool, attacker: FactionData)

@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://bs2gqyr3ais5"]
 
 [ext_resource type="PackedScene" uid="uid://cwug103slc8ve" path="res://scenes/player/player.tscn" id="1_2i8n1"]
-[ext_resource type="Script" uid="uid://cfxsrnu5h2vtg" path="res://scenes/world/camera.gd" id="1_50lg6"]
-[ext_resource type="Script" uid="uid://bsc1wlhy88bjj" path="res://scripts/world_generator.gd" id="4_5cb6b"]
-[ext_resource type="Script" uid="uid://bqc4j3jefbtqb" path="res://scenes/world/hud.gd" id="4_dbnql"]
+[ext_resource type="Script" uid="uid://cfxsrnu5h2vtg" path="res://scenes/battle/camera.gd" id="1_50lg6"]
+[ext_resource type="Script" uid="uid://bsc1wlhy88bjj" path="res://scenes/battle/world_generator.gd" id="4_5cb6b"]
+[ext_resource type="Script" uid="uid://bqc4j3jefbtqb" path="res://scenes/battle/hud.gd" id="4_dbnql"]
 
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_01o1s"]
