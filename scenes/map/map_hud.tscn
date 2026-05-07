@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/map/map_hud.gd" id="1_hud"]
+
+[node name="MapHud" type="Control"]
+script = ExtResource("1_hud")

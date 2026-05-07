@@ -95,7 +95,10 @@ func _on_debuffs_updated(debuffs: Dictionary) -> void:
 	debuff_fire_rate = debuffs["fire_rate"]
 
 func _on_died() -> void:
-	get_tree().reload_current_scene()
+	if BattleContext.is_battle_mode():
+		BattleContext.finish_battle(false)   # player lost — defender keeps province
+	else:
+		get_tree().reload_current_scene()
 
 func _on_weapon_empty() -> void:
 	# Auto-switch to pistol (index 0) when out of mags

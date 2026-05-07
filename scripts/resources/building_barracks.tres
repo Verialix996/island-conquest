@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="BuildingData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/building_data.gd" id="1_barracks"]
+
+[resource]
+script = ExtResource("1_barracks")
+building_name = "Barracks"
+description = "Trains soldiers. Adds defender units to battles fought here."
+gold_cost = 80
+income_bonus = 0
+defense_bonus = 5
+extra_defender_units = 3
+cover_density_add = 0.0
+building_type = &"barracks"

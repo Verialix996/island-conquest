@@ -26,9 +26,13 @@ func _ready() -> void:
 func _generate() -> void:
 	_nav_region = get_parent().get_node("NavigationRegion3D")
 	_place_cover()
-	_place_zones()
-	_bake_navmesh()
-	_spawn_starting_units()
+	if BattleContext.is_battle_mode():
+		_bake_navmesh()
+		_spawn_battle_units()
+	else:
+		_place_zones()
+		_bake_navmesh()
+		_spawn_starting_units()
 
 # ── Cover ─────────────────────────────────────────────────────────────────────
 
@@ -133,6 +137,36 @@ func _spawn_starting_units() -> void:
 			get_parent().add_child(unit)
 			var offset = Vector3(randf_range(-4.0, 4.0), 0, randf_range(-4.0, 4.0))
 			unit.global_position = Vector3(zone.global_position.x + offset.x, 1.1, zone.global_position.z + offset.z)
+
+# ── Battle mode: spawn province garrison as enemies ───────────────────────────
+const BATTLE_WIN_DETECTOR_GD = preload("res://scenes/world/battle_win_detector.gd")
+
+func _spawn_battle_units() -> void:
+	var detector := Node.new()
+	detector.set_script(BATTLE_WIN_DETECTOR_GD)
+	get_parent().add_child(detector)
+
+	await get_tree().process_frame
+	var province: ProvinceData = BattleContext.pending_province
+
+	# Defense battle: player defends against the AI attacker's troops
+	# Attack battle: player attacks the province's current garrison
+	var enemy_faction: FactionData
+	if BattleContext.is_defense:
+		enemy_faction = BattleContext.attacker_faction
+	else:
+		enemy_faction = province.owner_faction
+
+	var count: int = ProvinceGrid.get_province_garrison(province)
+	if count <= 0:
+		count = 3
+	for i in count:
+		var scene = ENEMY_MELEE if randf() < 0.5 else ENEMY_RANGED
+		var unit  = scene.instantiate()
+		unit.faction = enemy_faction
+		get_parent().add_child(unit)
+		var offset := Vector3(randf_range(-8.0, 8.0), 0.0, randf_range(-8.0, 8.0))
+		unit.global_position = Vector3(offset.x, 1.1, offset.z)
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 

@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(cd \"C:\\\\Users\\\\alons\\\\OneDrive\\\\מסמכים\\\\top down shooter\\\\island-conquest\"; Get-ChildItem -Recurse -Path scenes | Select-Object FullName | ForEach-Object { $_.FullName })"
+    ]
+  }
+}

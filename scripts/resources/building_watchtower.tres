@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="BuildingData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/building_data.gd" id="1_watchtower"]
+
+[resource]
+script = ExtResource("1_watchtower")
+building_name = "Watchtower"
+description = "Improves province defense. Will reveal enemy movements in a future update."
+gold_cost = 50
+income_bonus = 0
+defense_bonus = 5
+extra_defender_units = 0
+cover_density_add = 0.0
+building_type = &"watchtower"

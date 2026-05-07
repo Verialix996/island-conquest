@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="BuildingData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/building_data.gd" id="1_wall"]
+
+[resource]
+script = ExtResource("1_wall")
+building_name = "Wall"
+description = "Fortifies the province. Adds cover and slows attackers."
+gold_cost = 60
+income_bonus = 0
+defense_bonus = 10
+extra_defender_units = 0
+cover_density_add = 0.3
+building_type = &"wall"

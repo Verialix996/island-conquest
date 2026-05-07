@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/map/province_tile.gd" id="1_tile"]
+
+[node name="ProvinceT" type="Control"]
+script = ExtResource("1_tile")
