@@ -39,8 +39,8 @@ Three weapon types. The player starts with all three; enemies use melee or range
 - **Ammo HUD:** current mag / mags remaining shown bottom-right.
 - **Tracer lines:** brief visual line drawn from muzzle to hit point on fire.
 - **Scripts:** `scenes/weapons/weapon_base.gd`, `scenes/weapons/weapon_shotgun.gd`
-
----
+*enemies should have loadout like the player, ai entities need a rework
+---*
 
 ## 3. Enemy AI
 
@@ -61,7 +61,7 @@ Both types:
 - Color themselves by their faction's color on spawn.
 - Join the `"enemy"` group and a faction-specific group (`"green"` for player faction, faction name lowercase for others).
 - **Scripts:** `scenes/units/enemy_base.gd`, `scenes/units/enemy_ranged.gd`
-
+*ai entities should be only in their faction group, relations between the diffrent groups will be determined by their faction relations*
 ---
 
 ## 4. Zone Capture System
@@ -102,7 +102,7 @@ The 3D shooter scene (`scenes/battle/main_world.tscn`) is the tactical layer.
 - Repositions the player character to a friendly zone on load.
 - Bakes the navigation mesh at runtime.
 - Adds `BattleWinDetector` and `BattleTracker` nodes to the scene.
-
+*considering make the random generation be in chunks wich means i will make a prebuilt chunks an the random generator will use the chunks to make a map*
 **Ticket system:**
 - Each side starts with 10 tickets.
 - Player death → consumes 1 player ticket → respawn at nearest friendly zone. At 0 tickets: lose.
@@ -281,7 +281,7 @@ Procedurally builds the battle scene at runtime.
 - Moves the player character to a friendly zone.
 - Applies building effects from `BattleContext.contested_hex_building` (see below).
 - Bakes the navigation mesh **after** walls are placed, so pathfinding routes around them.
-
+*change to chunk generation*
 **Building effects (`_apply_building_effects`):**
 
 | Building | Effect in battle scene |
