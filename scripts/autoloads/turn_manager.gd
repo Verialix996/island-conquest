@@ -134,7 +134,8 @@ func _next_turn() -> void:
 	_begin_turn()
 
 func _begin_turn() -> void:
-	var faction := current_faction()
+	var faction: FactionData = current_faction()
+	DiplomacyManager.apply_turn_effects(faction)
 	_respawn_commanders_for(faction)
 	# Reset attack lock so commanders can act again this turn
 	for c in commanders:

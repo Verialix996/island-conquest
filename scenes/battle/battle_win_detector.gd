@@ -20,8 +20,8 @@ func _check_conditions() -> void:
 	print("[BWD] _check_conditions fired")
 
 	# Enemy count — only non-player-faction units count as enemies
-	var all_enemies := get_tree().get_nodes_in_group("enemy")
-	var living_enemies := 0
+	var all_enemies: Array[Node] = get_tree().get_nodes_in_group("enemy")
+	var living_enemies: int = 0
 	for e in all_enemies:
 		var dead = e.get("is_dead")
 		var faction = e.get("faction")
@@ -32,9 +32,9 @@ func _check_conditions() -> void:
 	print("[BWD] living_enemies=%d / total=%d" % [living_enemies, all_enemies.size()])
 
 	# Zone count
-	var all_zones := get_tree().get_nodes_in_group("battle_zone")
+	var all_zones: Array[Node] = get_tree().get_nodes_in_group("battle_zone")
 	print("[BWD] battle_zone group has %d zones" % all_zones.size())
-	var enemy_zones := 0
+	var enemy_zones: int = 0
 	for z in all_zones:
 		var faction = z.get("owner_faction")
 		var faction_name = faction.faction_name if faction != null else "null"

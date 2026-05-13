@@ -239,6 +239,8 @@ func capture_province(province: ProvinceData, new_owner: FactionData) -> void:
 	for coord in province.hex_tiles:
 		hex_ownership[coord] = new_owner
 	EventBus.province_captured.emit(province, new_owner, old_owner)
+	if old_owner != null and new_owner != null and old_owner != new_owner:
+		DiplomacyManager.collapse_as_vassal(old_owner, new_owner)
 
 # Capture exactly one tile; if it's the seed hex, also update province.owner_faction.
 func capture_hex(coord: Vector2i, new_owner: FactionData) -> void:
@@ -253,6 +255,8 @@ func capture_hex(coord: Vector2i, new_owner: FactionData) -> void:
 		if new_owner != null and not new_owner.owned_provinces.has(province):
 			new_owner.owned_provinces.append(province)
 	EventBus.hex_captured.emit(coord, new_owner, old_owner)
+	if province != null and province.seed_hex == coord and old_owner != null and new_owner != null and old_owner != new_owner:
+		DiplomacyManager.collapse_as_vassal(old_owner, new_owner)
 
 func get_hex_owner(coord: Vector2i) -> FactionData:
 	return hex_ownership.get(coord, null)

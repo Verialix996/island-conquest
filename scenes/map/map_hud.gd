@@ -31,6 +31,11 @@ func _ready() -> void:
 	EventBus.ap_changed.connect(_on_ap_changed)
 	EventBus.war_declared.connect(_on_war_declared)
 	EventBus.peace_made.connect(_on_peace_made)
+	EventBus.treaty_changed.connect(_on_treaty_changed)
+	EventBus.betrayal_committed.connect(_on_betrayal_committed)
+	EventBus.vassalage_started.connect(_on_vassalage_started)
+	EventBus.tribute_paid.connect(_on_tribute_paid)
+	EventBus.faction_collapsed.connect(_on_faction_collapsed)
 	EventBus.hex_captured.connect(_on_hex_captured)
 	EventBus.round_ended.connect(_on_round_ended)
 	EventBus.commander_spawned.connect(_on_commander_spawned)
@@ -307,6 +312,32 @@ func _on_war_declared(attacker: FactionData, target: FactionData) -> void:
 func _on_peace_made(initiator: FactionData, target: FactionData) -> void:
 	_log(initiator.faction_name + " and " + target.faction_name + " made peace.",
 		Color(0.45, 0.90, 0.55))
+
+func _on_treaty_changed(faction_a: FactionData, faction_b: FactionData, relation: int) -> void:
+	match relation:
+		DiplomacyManager.Relation.ALLIANCE:
+			_log(faction_a.faction_name + " allied with " + faction_b.faction_name + ".",
+				Color(0.45, 0.70, 1.0))
+		DiplomacyManager.Relation.TRADE_PACT:
+			_log(faction_a.faction_name + " signed a trade pact with " + faction_b.faction_name + ".",
+				Color(0.95, 0.65, 0.35))
+
+func _on_betrayal_committed(betrayer: FactionData, target: FactionData) -> void:
+	_log(betrayer.faction_name + " betrayed " + target.faction_name + "!",
+		Color(1.0, 0.25, 0.20))
+
+func _on_vassalage_started(vassal: FactionData, overlord: FactionData) -> void:
+	_log(vassal.faction_name + " became a vassal of " + overlord.faction_name + ".",
+		Color(0.75, 0.55, 1.0))
+
+func _on_tribute_paid(vassal: FactionData, overlord: FactionData) -> void:
+	if vassal == TurnManager.FACTION_PLAYER or overlord == TurnManager.FACTION_PLAYER:
+		_log(vassal.faction_name + " paid tribute to " + overlord.faction_name + ".",
+			Color(0.75, 0.55, 1.0))
+
+func _on_faction_collapsed(faction: FactionData, conqueror: FactionData) -> void:
+	_log(faction.faction_name + " collapsed under " + conqueror.faction_name + ".",
+		Color(0.80, 0.45, 1.0))
 
 func _on_hex_captured(coord: Vector2i, new_owner: FactionData, old_owner: FactionData) -> void:
 	if old_owner == null or new_owner == null:

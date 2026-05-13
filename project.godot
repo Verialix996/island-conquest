@@ -25,6 +25,10 @@ GameManager="*uid://csayxp04y2hrs"
 ProvinceGrid="*uid://cxkjqorerst41"
 TurnManager="*uid://ddrgo5r0xtv2d"
 
+[dotnet]
+
+project/assembly_name="island conquest"
+
 [input]
 
 ui_left={

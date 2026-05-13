@@ -55,24 +55,24 @@ func finish_battle(player_won: bool) -> void:
 		if not player_won and target_hex != Vector2i(-1, -1):
 			# AI wins defense: capture the hex; player commander retreats to capital
 			ProvinceGrid.capture_hex(target_hex, attacker_faction)
-			var player_cmd := TurnManager.get_commander_at(target_hex)
+			var player_cmd: CommanderData = TurnManager.get_commander_at(target_hex)
 			if player_cmd != null:
 				TurnManager.defeat_commander(player_cmd)
 		else:
 			# Player wins defense: AI attacker retreats to their capital
-			var ai_cmd := TurnManager._find_commander(attacker_faction)
+			var ai_cmd: CommanderData = TurnManager._find_commander(attacker_faction)
 			if ai_cmd != null:
 				TurnManager.defeat_commander(ai_cmd)
 	else:
 		if player_won and target_hex != Vector2i(-1, -1):
 			# Player wins offense: capture the hex; defending commander retreats
 			ProvinceGrid.capture_hex(target_hex, attacker_faction)
-			var defender_cmd := TurnManager.get_commander_at(target_hex)
+			var defender_cmd: CommanderData = TurnManager.get_commander_at(target_hex)
 			if defender_cmd != null:
 				TurnManager.defeat_commander(defender_cmd)
 		else:
 			# Player loses offense: player commander retreats to capital
-			var player_cmd := TurnManager._find_commander(TurnManager.FACTION_PLAYER)
+			var player_cmd: CommanderData = TurnManager._find_commander(TurnManager.FACTION_PLAYER)
 			if player_cmd != null:
 				TurnManager.defeat_commander(player_cmd)
 

@@ -5,6 +5,9 @@ const ATTACK_STRENGTH := 5
 var _last_move_target: Vector2i = Vector2i(-1, -1)
 
 func take_turn(faction: FactionData) -> void:
+	_consider_trade_and_alliance(faction)
+	_consider_coalition(faction)
+	_consider_betrayal(faction)
 	_consider_peace(faction)
 	_consider_war_declarations(faction)
 	_consider_building(faction)
@@ -29,6 +32,8 @@ func _run_commander(faction: FactionData, commander: CommanderData) -> void:
 # ─── Diplomacy ────────────────────────────────────────────────────────────────
 
 func _consider_war_declarations(faction: FactionData) -> void:
+	if DiplomacyManager.is_vassal(faction):
+		return
 	# PACIFIST never declares war
 	if faction.has_trait(FactionTrait.TraitType.PACIFIST):
 		return
@@ -80,6 +85,86 @@ func _consider_peace(faction: FactionData) -> void:
 			continue
 		if DiplomacyManager.are_at_war(faction, other) and randf() < peace_bias:
 			DiplomacyManager.offer_peace(faction, other)
+
+func _consider_trade_and_alliance(faction: FactionData) -> void:
+	if faction == TurnManager.FACTION_BARBARIAN or DiplomacyManager.is_vassal(faction):
+		return
+	var trade_chance := 0.08
+	var alliance_chance := 0.04
+	if faction.has_trait(FactionTrait.TraitType.TRADER):
+		trade_chance += 0.22
+	if faction.has_trait(FactionTrait.TraitType.DIPLOMATIC):
+		trade_chance += 0.12
+		alliance_chance += 0.20
+	if faction.has_trait(FactionTrait.TraitType.ISOLATIONIST):
+		trade_chance -= 0.05
+		alliance_chance -= 0.03
+	if faction.has_trait(FactionTrait.TraitType.AGGRESSIVE) or faction.has_trait(FactionTrait.TraitType.ZEALOT):
+		alliance_chance -= 0.03
+	trade_chance = clamp(trade_chance, 0.0, 0.6)
+	alliance_chance = clamp(alliance_chance, 0.0, 0.5)
+
+	for other: FactionData in TurnManager.get_all_factions():
+		if other == faction or other == TurnManager.FACTION_BARBARIAN or DiplomacyManager.is_vassal(other):
+			continue
+		var relation: int = DiplomacyManager.get_relation(faction, other)
+		if relation == DiplomacyManager.Relation.PEACE and randf() < trade_chance:
+			DiplomacyManager.propose_trade_pact(faction, other)
+		elif relation == DiplomacyManager.Relation.TRADE_PACT and randf() < alliance_chance:
+			DiplomacyManager.propose_alliance(faction, other)
+
+func _consider_coalition(faction: FactionData) -> void:
+	if faction == TurnManager.FACTION_BARBARIAN or DiplomacyManager.is_vassal(faction):
+		return
+	var leader: FactionData = _find_province_leader()
+	if leader == null or leader == faction or leader == TurnManager.FACTION_BARBARIAN:
+		return
+	var leader_count: int = _count_seed_provinces(leader)
+	if leader_count < ceili(float(ProvinceGrid.NUM_PROVINCES) * 0.4):
+		return
+	if DiplomacyManager.are_at_war(faction, leader):
+		return
+	var chance := 0.18
+	if faction.has_trait(FactionTrait.TraitType.DIPLOMATIC):
+		chance += 0.12
+	if faction.has_trait(FactionTrait.TraitType.OPPORTUNIST):
+		chance += 0.10
+	if faction.has_trait(FactionTrait.TraitType.PACIFIST):
+		chance -= 0.12
+	if randf() < clamp(chance, 0.0, 0.5):
+		DiplomacyManager.declare_war(faction, leader)
+		for other: FactionData in TurnManager.get_all_factions():
+			if other == faction or other == leader or other == TurnManager.FACTION_BARBARIAN:
+				continue
+			if DiplomacyManager.are_at_war(other, leader) and DiplomacyManager.get_relation(faction, other) == DiplomacyManager.Relation.PEACE:
+				DiplomacyManager.propose_alliance(faction, other)
+				break
+
+func _consider_betrayal(faction: FactionData) -> void:
+	if faction == TurnManager.FACTION_BARBARIAN or DiplomacyManager.is_vassal(faction):
+		return
+	var chance := 0.0
+	if faction.has_trait(FactionTrait.TraitType.AGGRESSIVE):
+		chance += 0.08
+	if faction.has_trait(FactionTrait.TraitType.OPPORTUNIST):
+		chance += 0.10
+	if faction.has_trait(FactionTrait.TraitType.ZEALOT):
+		chance += 0.06
+	if faction.has_trait(FactionTrait.TraitType.DIPLOMATIC) or faction.has_trait(FactionTrait.TraitType.PACIFIST):
+		chance -= 0.08
+	if chance <= 0.0:
+		return
+	for other: FactionData in TurnManager.get_all_factions():
+		if other == faction or other == TurnManager.FACTION_BARBARIAN:
+			continue
+		var relation: int = DiplomacyManager.get_relation(faction, other)
+		if relation != DiplomacyManager.Relation.ALLIANCE and relation != DiplomacyManager.Relation.TRADE_PACT:
+			continue
+		if faction.has_trait(FactionTrait.TraitType.OPPORTUNIST) and _count_seed_provinces(other) >= _count_seed_provinces(faction):
+			continue
+		if randf() < clamp(chance, 0.0, 0.35):
+			DiplomacyManager.declare_war(faction, other)
+			return
 
 func _consider_building(faction: FactionData) -> void:
 	if not faction.has_trait(FactionTrait.TraitType.BUILDER) and \
@@ -181,7 +266,7 @@ func _do_attack(faction: FactionData, commander: CommanderData, target: Vector2i
 
 	# Attacking a player tile queues a defense battle instead of auto-resolving
 	if defender_faction == TurnManager.FACTION_PLAYER:
-		var province := ProvinceGrid.get_province_for_hex(target)
+		var province: ProvinceData = ProvinceGrid.get_province_for_hex(target)
 		if province != null:
 			province.is_contested     = true
 			province.attacker_faction = faction
@@ -193,14 +278,14 @@ func _do_attack(faction: FactionData, commander: CommanderData, target: Vector2i
 		return
 
 	# Auto-resolve vs non-player defenders
-	var province := ProvinceGrid.get_province_for_hex(target)
-	var garrison := ProvinceGrid.get_province_garrison(province) if province else 3
+	var province: ProvinceData = ProvinceGrid.get_province_for_hex(target)
+	var garrison: int = ProvinceGrid.get_province_garrison(province) if province else 3
 	if ATTACK_STRENGTH > garrison:
 		var old_owner: FactionData = ProvinceGrid.get_hex_owner(target)
 		ProvinceGrid.capture_hex(target, faction)
 		EventBus.hex_captured.emit(target, faction, old_owner)
 		# Destroy the defending commander if they were standing on this tile
-		var defender_cmd := TurnManager.get_commander_at(target)
+		var defender_cmd: CommanderData = TurnManager.get_commander_at(target)
 		if defender_cmd != null:
 			TurnManager.destroy_commander(defender_cmd)
 		# Move attacker onto the captured tile — no extra AP cost for the advance
@@ -272,3 +357,22 @@ func _get_all_commanders(faction: FactionData) -> Array:
 		if cd and cd.owner_faction == faction:
 			result.append(cd)
 	return result
+
+func _find_province_leader() -> FactionData:
+	var best_faction: FactionData = null
+	var best_count := 0
+	for faction: FactionData in TurnManager.get_all_factions():
+		if faction == TurnManager.FACTION_BARBARIAN:
+			continue
+		var count: int = _count_seed_provinces(faction)
+		if count > best_count:
+			best_count = count
+			best_faction = faction
+	return best_faction
+
+func _count_seed_provinces(faction: FactionData) -> int:
+	var count := 0
+	for p: ProvinceData in ProvinceGrid.provinces:
+		if ProvinceGrid.get_hex_owner(p.seed_hex) == faction:
+			count += 1
+	return count

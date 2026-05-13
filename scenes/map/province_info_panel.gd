@@ -199,7 +199,7 @@ func _populate_build_section() -> void:
 	for child in _build_rows.get_children():
 		child.queue_free()
 
-	var is_player_owned := (_current_coord != Vector2i(-1, -1)
+	var is_player_owned: bool = (_current_coord != Vector2i(-1, -1)
 		and ProvinceGrid.get_hex_owner(_current_coord) == TurnManager.FACTION_PLAYER)
 	_build_sep.visible    = is_player_owned
 	_build_header.visible = is_player_owned

@@ -60,8 +60,8 @@ func _build_grid() -> void:
 		for x in ProvinceGrid.GRID_W:
 			var coord := Vector2i(x, y)
 			var tile: ProvinceT = PROVINCE_TILE.instantiate()
-			var px := x * HEX_W + (y % 2) * (HEX_W / 2.0)
-			var py := y * HEX_H * 0.75
+			var px: float = x * HEX_W + (y % 2) * (HEX_W / 2.0)
+			var py: float = y * HEX_H * 0.75
 			tile.position = Vector2(px, py)
 			tile.size = Vector2(HEX_W, HEX_H)
 			tile.setup(coord)
@@ -174,7 +174,7 @@ func _claim_neutral(coord: Vector2i) -> void:
 	_deselect_commander()
 
 func _declare_attack(target_hex: Vector2i) -> void:
-	var province := ProvinceGrid.get_province_for_hex(target_hex)
+	var province: ProvinceData = ProvinceGrid.get_province_for_hex(target_hex)
 	if province == null:
 		return
 	if not TurnManager.spend_ap(2):
@@ -299,7 +299,7 @@ func _show_end_screen(player_won: bool, reason: String) -> void:
 	title.text = "VICTORY" if player_won else "DEFEAT"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 52)
-	var title_color := Color(1.0, 0.85, 0.10) if player_won else Color(0.92, 0.22, 0.22)
+	var title_color: Color = Color(1.0, 0.85, 0.10) if player_won else Color(0.92, 0.22, 0.22)
 	title.add_theme_color_override("font_color", title_color)
 	vbox.add_child(title)
 
@@ -326,7 +326,7 @@ const BATTLE_ATTACK_STRENGTH := 5
 func _on_battle_choice_needed(province: ProvinceData, is_defense: bool, attacker: FactionData) -> void:
 	if _game_over:
 		return
-	var garrison := ProvinceGrid.get_province_garrison(province)
+	var garrison: int = ProvinceGrid.get_province_garrison(province)
 
 	var layer := CanvasLayer.new()
 	layer.layer = 5
@@ -381,7 +381,7 @@ func _on_battle_choice_needed(province: ProvinceData, is_defense: bool, attacker
 	stats2.add_theme_font_size_override("font_size", 13)
 	vbox2.add_child(stats2)
 
-	var player_favored := (BATTLE_ATTACK_STRENGTH > garrison) if not is_defense else (garrison >= BATTLE_ATTACK_STRENGTH)
+	var player_favored: bool = (BATTLE_ATTACK_STRENGTH > garrison) if not is_defense else (garrison >= BATTLE_ATTACK_STRENGTH)
 	var odds_lbl := Label.new()
 	odds_lbl.text = "Auto-resolve outcome: %s" % ("Win" if player_favored else "Lose")
 	odds_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -436,21 +436,21 @@ func _auto_resolve_battle(province: ProvinceData, is_defense: bool, attacker: Fa
 	if is_defense:
 		if not player_won:
 			ProvinceGrid.capture_hex(target_hex, attacker)
-			var player_cmd := TurnManager.get_commander_at(target_hex)
+			var player_cmd: CommanderData = TurnManager.get_commander_at(target_hex)
 			if player_cmd != null:
 				TurnManager.destroy_commander(player_cmd)
 		else:
-			var ai_cmd := TurnManager._find_commander(attacker)
+			var ai_cmd: CommanderData = TurnManager._find_commander(attacker)
 			if ai_cmd != null:
 				TurnManager.destroy_commander(ai_cmd)
 	else:
 		if player_won:
 			ProvinceGrid.capture_hex(target_hex, TurnManager.FACTION_PLAYER)
-			var defender_cmd := TurnManager.get_commander_at(target_hex)
+			var defender_cmd: CommanderData = TurnManager.get_commander_at(target_hex)
 			if defender_cmd != null:
 				TurnManager.destroy_commander(defender_cmd)
 		else:
-			var player_cmd := TurnManager._find_commander(TurnManager.FACTION_PLAYER)
+			var player_cmd: CommanderData = TurnManager._find_commander(TurnManager.FACTION_PLAYER)
 			if player_cmd != null:
 				TurnManager.destroy_commander(player_cmd)
 
