@@ -1,6 +1,6 @@
 # Island Conquest — Game Systems Reference
 
-Current state of every implemented system. Updated as of Milestone 8.
+Current state of every implemented system. Updated as of Milestone 9.
 
 ---
 
@@ -53,13 +53,13 @@ Two enemy archetypes, both based on the same state machine:
 - **ATTACK:** stops and fires/melee-attacks at the target on a timer.
 
 **Melee (`enemy_base`):** close-range attack, blue capsule model.
-**Ranged (`enemy_ranged`):** keeps preferred distance (~8 units), fires raycasts with configurable damage and cooldown, purple capsule model.
+**Ranged (`enemy_ranged`):** keeps preferred distance (~8 units), fires from the shared pistol / shotgun / rifle loadout with configurable range and cooldown, purple capsule model.
 
 Both types:
-- Are faction-aware: only attack units from a different faction.
+- Are faction-aware: attack/capture only factions currently at war according to `DiplomacyManager.are_at_war()`.
 - Use `NavigationAgent3D` + RVO avoidance for pathfinding.
 - Color themselves by their faction's color on spawn.
-- Join the `"enemy"` group and a faction-specific group (`"green"` for player faction, faction name lowercase for others).
+- Join only their faction-specific group (`"faction_player"`, `"faction_red"`, etc.); broad `"enemy"` grouping is not used for hostility.
 - **Scripts:** `scenes/units/enemy_base.gd`, `scenes/units/enemy_ranged.gd`
 *ai entities should be only in their faction group, relations between the diffrent groups will be determined by their faction relations*
 ---
@@ -96,13 +96,13 @@ The 3D shooter scene (`scenes/battle/main_world.tscn`) is the tactical layer.
 - **Defense:** an AI faction attacks a player-owned hex.
 
 **Setup (WorldGenerator):**
-- Places cover objects randomly across the map.
+- Uses a first-version chunk-generation path by default: reusable `BattleChunk` scenes under `scenes/battle/chunks/` define authored cover and candidate zone marker slots.
+- Keeps the legacy random generator as a coexistence fallback when `use_chunk_generation` is disabled or no usable chunk data is available.
 - Splits zones: first half (closest to player spawn) → player faction, second half → enemy faction.
 - Spawns initial enemy garrison units near enemy zones (offset ±2 units from zone center).
 - Repositions the player character to a friendly zone on load.
 - Bakes the navigation mesh at runtime.
 - Adds `BattleWinDetector` and `BattleTracker` nodes to the scene.
-*considering make the random generation be in chunks wich means i will make a prebuilt chunks an the random generator will use the chunks to make a map*
 **Ticket system:**
 - Each side starts with 10 tickets.
 - Player death → consumes 1 player ticket → respawn at nearest friendly zone. At 0 tickets: lose.
@@ -214,16 +214,23 @@ One building slot per hex. Buildings cost resources and provide bonuses.
 
 ### Diplomacy System
 
-Relations between factions: **War / Peace / Alliance**.
+Relations between factions: **War / Peace / Alliance / Trade Pact / Vassalage**.
 
 - **War:** can attack each other's provinces.
 - **Peace:** cannot attack, can coexist.
-- **Alliance:** cannot attack each other, may coordinate.
+- **Alliance:** cannot attack each other; AI may coordinate through coalition behavior.
+- **Trade Pact:** cannot attack each other and both factions gain +1 trade during their turns.
+- **Vassalage:** vassals cannot fight their overlord, pay one available resource as tribute each turn, and collapse into vassalage after losing all seed provinces.
 
-Player actions available via the Diplomacy panel (click a faction):
-- Declare war, offer peace, propose alliance.
+Player actions available via the Diplomacy panel:
+- Declare war, offer peace/ceasefire, propose alliance, propose trade pact, demand vassalage from one-province factions, or break active treaties.
+- Incoming AI proposals appear in the panel's **Messages** section with Accept / Reject buttons. Accepted proposals apply the treaty immediately; rejected proposals are logged and removed from the inbox.
 
-AI reactions are handled by AIDirector based on aggression values and existing war states.
+AI diplomacy is handled by `AIDirector` based on traits and map state:
+- TRADER / DIPLOMATIC factions can send trade-pact and alliance proposals to the player instead of silently changing treaties.
+- Peace-biased factions send ceasefire offers to the player while still resolving AI-vs-AI peace directly.
+- Opportunistic/aggressive factions can betray alliances or trade pacts by declaring war.
+- Coalitions can form against a faction that controls at least 40% of province capitals.
 - **Autoload:** `scripts/autoloads/diplomacy_manager.gd`, **Panel:** `scenes/map/diplomacy_panel.gd`
 
 ### Win / Lose Conditions (Map)
@@ -239,10 +246,13 @@ AI reactions are handled by AIDirector based on aggression values and existing w
 Controls Red, Blue, Orange, and Barbarian factions each turn.
 
 **Each turn runs in this order:**
-1. `_consider_peace` — trait-driven peace offers (DIPLOMATIC / TRADER factions).
-2. `_consider_war_declarations` — trait-modified war chance against neighboring factions.
-3. `_consider_building` — BUILDER / MILITARIST factions spend resources on Barracks.
-4. Commander action loop: move → claim neutral → attack enemy, spending AP until exhausted.
+1. `_consider_trade_and_alliance` — trait-driven trade pact / alliance proposals; AI-vs-player offers become inbox messages.
+2. `_consider_coalition` — smaller factions may join against a province leader that controls at least 40% of capitals.
+3. `_consider_betrayal` — aggressive/opportunistic/zealot factions may break a treaty by declaring war.
+4. `_consider_peace` — peace-biased factions offer ceasefires (messages to player, direct peace for AI-vs-AI).
+5. `_consider_war_declarations` — trait-modified war chance against neighboring factions.
+6. `_consider_building` — BUILDER / MILITARIST factions spend resources on Barracks.
+7. Commander action loop: move → claim neutral → attack enemy, spending AP until exhausted.
 
 **War declaration logic:**
 - Base chance 0.30, modified by each trait's `war_declaration_bias`.

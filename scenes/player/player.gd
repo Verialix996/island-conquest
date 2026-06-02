@@ -4,9 +4,13 @@ signal health_changed(parts: Array)
 signal damage_taken
 
 const SPEED = 5.0
+const FACTION_PLAYER = preload("res://scripts/resources/faction_player.tres")
+
+@export var faction: FactionData = FACTION_PLAYER
 
 var hit_sound: AudioStreamPlayer3D
 var mesh: MeshInstance3D
+var original_color: Color = Color("357e00")
 var health_component: HealthComponent
 var weapons: Array[Node] = []
 var current_weapon: int = 0
@@ -16,8 +20,15 @@ var debuff_movement: float = 0.0
 var debuff_fire_rate: float = 0.0
 
 func _ready() -> void:
+	add_to_group(_faction_group_name(faction))
 	hit_sound = $HitSound
-	mesh = $MeshInstance3D
+	mesh = _find_visual_tint_mesh()
+	if mesh == null and has_node("MeshInstance3D") and $MeshInstance3D is MeshInstance3D:
+		mesh = $MeshInstance3D
+	if mesh != null and mesh.get_active_material(0) != null:
+		var mat = mesh.get_active_material(0).duplicate()
+		mesh.set_surface_override_material(0, mat)
+		original_color = mat.albedo_color
 	health_component = $HealthComponent
 	health_component.unit_died.connect(_on_died)
 	health_component.debuffs_updated.connect(_on_debuffs_updated)
@@ -120,6 +131,28 @@ func _on_weapon_empty() -> void:
 	_equip_weapon(0)
 
 func _flash_red() -> void:
+	if mesh == null or mesh.get_active_material(0) == null:
+		return
 	mesh.get_active_material(0).albedo_color = Color.RED
 	await get_tree().create_timer(0.1).timeout
-	mesh.get_active_material(0).albedo_color = Color("357e00")
+	if is_instance_valid(self) and mesh != null and mesh.get_active_material(0) != null:
+		mesh.get_active_material(0).albedo_color = original_color
+
+func get_faction() -> FactionData:
+	return faction
+
+func _faction_group_name(faction_data: FactionData) -> String:
+	if faction_data == null:
+		return "faction_unknown"
+	return "faction_" + faction_data.faction_name.to_lower().replace(" ", "_")
+
+func _find_visual_tint_mesh() -> MeshInstance3D:
+	for child in find_children("FactionTintTorso", "MeshInstance3D", true, false):
+		var tint_mesh := child as MeshInstance3D
+		if tint_mesh != null and tint_mesh.is_visible_in_tree():
+			return tint_mesh
+	for child in find_children("", "MeshInstance3D", true, false):
+		var visible_mesh := child as MeshInstance3D
+		if visible_mesh != null and visible_mesh.is_visible_in_tree():
+			return visible_mesh
+	return null

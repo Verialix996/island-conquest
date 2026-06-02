@@ -1,0 +1,33 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/battle/chunks/battle_chunk.gd" id="1_chunk"]
+
+[node name="ChunkForwardLeft" type="Node3D"]
+script = ExtResource("1_chunk")
+chunk_name = "Forward Left"
+
+[node name="CoverSlots" type="Node3D" parent="."]
+
+[node name="Cover_00" type="Marker3D" parent="CoverSlots"]
+position = Vector3(-24, 1, -18)
+rotation = Vector3(0, 0.5, 0)
+
+[node name="Cover_01" type="Marker3D" parent="CoverSlots"]
+position = Vector3(-14, 1, -8)
+rotation = Vector3(0, -0.8, 0)
+
+[node name="Cover_02" type="Marker3D" parent="CoverSlots"]
+position = Vector3(-6, 1, -22)
+rotation = Vector3(0, 1.2, 0)
+
+[node name="Cover_03" type="Marker3D" parent="CoverSlots"]
+position = Vector3(-28, 1, 6)
+rotation = Vector3(0, -0.3, 0)
+
+[node name="ZoneSlots" type="Node3D" parent="."]
+
+[node name="Zone_00" type="Marker3D" parent="ZoneSlots"]
+position = Vector3(-26, 0, -24)
+
+[node name="Zone_01" type="Marker3D" parent="ZoneSlots"]
+position = Vector3(-18, 0, 18)

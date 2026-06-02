@@ -84,7 +84,10 @@ func _consider_peace(faction: FactionData) -> void:
 		if other == faction:
 			continue
 		if DiplomacyManager.are_at_war(faction, other) and randf() < peace_bias:
-			DiplomacyManager.offer_peace(faction, other)
+			if other == TurnManager.FACTION_PLAYER:
+				DiplomacyManager.send_proposal(faction, other, DiplomacyManager.ProposalType.CEASEFIRE)
+			else:
+				DiplomacyManager.offer_peace(faction, other)
 
 func _consider_trade_and_alliance(faction: FactionData) -> void:
 	if faction == TurnManager.FACTION_BARBARIAN or DiplomacyManager.is_vassal(faction):
@@ -109,9 +112,15 @@ func _consider_trade_and_alliance(faction: FactionData) -> void:
 			continue
 		var relation: int = DiplomacyManager.get_relation(faction, other)
 		if relation == DiplomacyManager.Relation.PEACE and randf() < trade_chance:
-			DiplomacyManager.propose_trade_pact(faction, other)
+			if other == TurnManager.FACTION_PLAYER:
+				DiplomacyManager.send_proposal(faction, other, DiplomacyManager.ProposalType.TRADE_PACT)
+			else:
+				DiplomacyManager.propose_trade_pact(faction, other)
 		elif relation == DiplomacyManager.Relation.TRADE_PACT and randf() < alliance_chance:
-			DiplomacyManager.propose_alliance(faction, other)
+			if other == TurnManager.FACTION_PLAYER:
+				DiplomacyManager.send_proposal(faction, other, DiplomacyManager.ProposalType.ALLIANCE)
+			else:
+				DiplomacyManager.propose_alliance(faction, other)
 
 func _consider_coalition(faction: FactionData) -> void:
 	if faction == TurnManager.FACTION_BARBARIAN or DiplomacyManager.is_vassal(faction):

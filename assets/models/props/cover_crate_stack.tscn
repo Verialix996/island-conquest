@@ -1,0 +1,32 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="Wood"]
+albedo_color = Color(0.43, 0.25, 0.10, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="Crate"]
+material = SubResource("Wood")
+size = Vector3(1, 1, 1)
+
+[sub_resource type="BoxShape3D" id="CoverShape"]
+size = Vector3(2.25, 1.55, 1.05)
+
+[node name="CoverCrateStack" type="Node3D"]
+
+[node name="CrateA" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.8, 0, 0, 0, 1, -0.55, 0.4, 0)
+mesh = SubResource("Crate")
+
+[node name="CrateB" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.8, 0, 0, 0, 1, 0.55, 0.4, 0)
+mesh = SubResource("Crate")
+
+[node name="CrateTop" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.82, 0, 0, 0, 0.7, 0, 0, 0, 0.82, 0, 1.15, 0.1)
+mesh = SubResource("Crate")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.78, 0.02)
+shape = SubResource("CoverShape")

@@ -56,6 +56,54 @@ func fire() -> void:
 		var end = global_position + (-global_transform.basis.z * 50.0)
 		spawn_tracer(global_position, end)
 
+func ai_fire(shooter_faction: FactionData) -> bool:
+	if not _consume_ai_round():
+		return false
+	_fire_filtered(shooter_faction)
+	return true
+
+func _consume_ai_round() -> bool:
+	if not can_fire or is_reloading:
+		return false
+	if current_mag_ammo <= 0:
+		if unlimited_mags or current_mags > 0:
+			reload()
+		else:
+			weapon_empty.emit()
+		return false
+	can_fire = false
+	current_mag_ammo -= 1
+	ammo_changed.emit(current_mag_ammo, current_mags)
+	_finish_ai_cooldown()
+	return true
+
+func _finish_ai_cooldown() -> void:
+	await get_tree().create_timer(fire_rate).timeout
+	can_fire = true
+
+func _fire_filtered(shooter_faction: FactionData) -> void:
+	muzzle_flash.restart()
+	gunshot_sound.play()
+	if raycast.is_colliding():
+		var hit = raycast.get_collider()
+		var hit_point = raycast.get_collision_point()
+		if _can_damage_ai_hit(shooter_faction, hit):
+			hit.take_damage(damage, hit_chance_modifiers)
+		spawn_tracer(global_position, hit_point)
+	else:
+		var end = global_position + (-global_transform.basis.z * 50.0)
+		spawn_tracer(global_position, end)
+
+func _can_damage_ai_hit(shooter_faction: FactionData, hit: Object) -> bool:
+	if hit == null or not hit.has_method("take_damage"):
+		return false
+	var target_faction: FactionData = null
+	if hit.has_method("get_faction"):
+		target_faction = hit.get_faction()
+	else:
+		target_faction = hit.get("faction")
+	return target_faction != null and DiplomacyManager.are_at_war(shooter_faction, target_faction)
+
 func reload() -> void:
 	if is_reloading:
 		return

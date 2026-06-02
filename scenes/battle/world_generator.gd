@@ -3,6 +3,15 @@ extends Node
 const ZONE_SCENE   = preload("res://scenes/battle/zone.tscn")
 const ENEMY_MELEE  = preload("res://scenes/units/enemy_base.tscn")
 const ENEMY_RANGED = preload("res://scenes/units/enemy_ranged.tscn")
+const DEFAULT_BATTLE_CHUNKS: Array[PackedScene] = [
+	preload("res://scenes/battle/chunks/chunk_forward_left.tscn"),
+	preload("res://scenes/battle/chunks/chunk_forward_right.tscn"),
+]
+const DEFAULT_COVER_PROPS: Array[PackedScene] = [
+	preload("res://assets/models/props/cover_crate_stack.tscn"),
+	preload("res://assets/models/props/cover_sandbag_wall.tscn"),
+]
+const WALL_SEGMENT_MODEL: PackedScene = preload("res://assets/models/buildings/wall_segment_low_poly.tscn")
 
 const FACTION_PLAYER = preload("res://scripts/resources/faction_player.tres")
 const FACTION_RED    = preload("res://scripts/resources/faction_red.tres")
@@ -16,6 +25,12 @@ const FACTION_ORANGE = preload("res://scripts/resources/faction_orange.tres")
 @export var ai_units_per_zone: int = 3
 @export var player_starting_units: int = 3
 @export var city_height: float = 3.0
+@export var use_chunk_generation: bool = true
+@export var battle_chunk_scenes: Array[PackedScene] = []
+@export var cover_prop_scenes: Array[PackedScene] = []
+@export var use_low_poly_cover_props: bool = true
+@export var chunk_cover_jitter: float = 1.25
+@export var chunk_zone_jitter: float = 1.5
 
 var _nav_region: NavigationRegion3D
 var _zone_positions: Array[Vector3] = []
@@ -25,7 +40,10 @@ func _ready() -> void:
 
 func _generate() -> void:
 	_nav_region = get_parent().get_node("NavigationRegion3D")
-	_place_cover()
+	if use_chunk_generation:
+		_place_chunk_cover()
+	else:
+		_place_cover()
 	if BattleContext.is_battle_mode():
 		_place_zones()
 		await _spawn_battle_units()   # may place walls; bake happens after
@@ -38,33 +56,70 @@ func _generate() -> void:
 # ── Cover ─────────────────────────────────────────────────────────────────────
 
 func _place_cover() -> void:
+	for i in cover_count:
+		_place_cover_at(_random_map_pos(1.0), randf_range(0, 360))
+
+func _place_chunk_cover() -> void:
+	var placed := 0
+	for chunk in _instantiate_active_chunks():
+		if not chunk.has_method("get_cover_positions"):
+			chunk.free()
+			continue
+		for slot: Vector3 in chunk.get_cover_positions():
+			var pos := Vector3(
+				slot.x + randf_range(-chunk_cover_jitter, chunk_cover_jitter),
+				1.0,
+				slot.z + randf_range(-chunk_cover_jitter, chunk_cover_jitter)
+			)
+			_place_cover_at(pos, randf_range(0, 360))
+			placed += 1
+		chunk.free()
+
+	# Coexistence fallback: if no chunk scene/data is available, keep the old random cover path.
+	if placed == 0:
+		_place_cover()
+
+func _place_cover_at(pos: Vector3, rot_y: float) -> void:
+	if use_low_poly_cover_props:
+		var prop_scene := _pick_cover_prop_scene()
+		if prop_scene != null:
+			var prop := prop_scene.instantiate()
+			if prop is Node3D:
+				var prop_node := prop as Node3D
+				prop_node.name = "CoverProp"
+				prop_node.position = Vector3(pos.x, 0.0, pos.z)
+				prop_node.rotation_degrees.y = rot_y
+				_nav_region.add_child(prop_node)
+				return
+			prop.free()
+
 	var cover_shape = BoxShape3D.new()
 	cover_shape.size = Vector3(4, 1.5, 1)
 
-	for i in cover_count:
-		var pos = _random_map_pos(1.0)
-		var body = StaticBody3D.new()
-		body.position = pos
-		body.rotation_degrees.y = randf_range(0, 360)
+	var body = StaticBody3D.new()
+	body.position = pos
+	body.rotation_degrees.y = rot_y
 
-		var mesh_inst = MeshInstance3D.new()
-		var box = BoxMesh.new()
-		box.size = Vector3(4, 1.5, 1)
-		mesh_inst.mesh = box
-		var mat = StandardMaterial3D.new()
-		mat.albedo_color = Color(0.4, 0.3, 0.2)
-		mesh_inst.set_surface_override_material(0, mat)
+	var mesh_inst = MeshInstance3D.new()
+	var box = BoxMesh.new()
+	box.size = Vector3(4, 1.5, 1)
+	mesh_inst.mesh = box
+	var mat = StandardMaterial3D.new()
+	mat.albedo_color = Color(0.4, 0.3, 0.2)
+	mesh_inst.set_surface_override_material(0, mat)
 
-		var col = CollisionShape3D.new()
-		col.shape = cover_shape
+	var col = CollisionShape3D.new()
+	col.shape = cover_shape
 
-		body.add_child(mesh_inst)
-		body.add_child(col)
-		_nav_region.add_child(body)
+	body.add_child(mesh_inst)
+	body.add_child(col)
+	_nav_region.add_child(body)
 
 # ── Zones ─────────────────────────────────────────────────────────────────────
 
 func _place_zones() -> void:
+	_zone_positions.clear()
+	_seed_chunk_zone_positions()
 	var attempts := 0
 	while _zone_positions.size() < zone_count and attempts < 500:
 		attempts += 1
@@ -101,6 +156,52 @@ func _place_zones() -> void:
 				faction = ai_factions[(zone_index - 1) % ai_factions.size()]
 			_spawn_zone(pos, faction, zone_index)
 			zone_index += 1
+
+func _seed_chunk_zone_positions() -> void:
+	if not use_chunk_generation:
+		return
+
+	for chunk in _instantiate_active_chunks():
+		if not chunk.has_method("get_zone_positions"):
+			chunk.free()
+			continue
+		for slot: Vector3 in chunk.get_zone_positions():
+			if _zone_positions.size() >= zone_count:
+				break
+			var pos := Vector3(
+				slot.x + randf_range(-chunk_zone_jitter, chunk_zone_jitter),
+				0.0,
+				slot.z + randf_range(-chunk_zone_jitter, chunk_zone_jitter)
+			)
+			if _too_close(pos, _zone_positions, zone_min_distance):
+				continue
+			_zone_positions.append(pos)
+		chunk.free()
+
+func _instantiate_active_chunks() -> Array[Node3D]:
+	var chunks: Array[Node3D] = []
+	for chunk_scene in _active_chunk_scenes():
+		if chunk_scene == null:
+			continue
+		var chunk := chunk_scene.instantiate()
+		if chunk is Node3D:
+			chunks.append(chunk as Node3D)
+		else:
+			chunk.free()
+	return chunks
+
+func _active_chunk_scenes() -> Array[PackedScene]:
+	if battle_chunk_scenes.is_empty():
+		return DEFAULT_BATTLE_CHUNKS
+	return battle_chunk_scenes
+
+func _pick_cover_prop_scene() -> PackedScene:
+	var active_props := cover_prop_scenes
+	if active_props.is_empty():
+		active_props = DEFAULT_COVER_PROPS
+	if active_props.is_empty():
+		return null
+	return active_props[randi() % active_props.size()]
 
 func _spawn_zone(pos: Vector3, faction: FactionData, index: int) -> void:
 	var zone = ZONE_SCENE.instantiate()
@@ -248,34 +349,24 @@ func _spawn_extra_garrison(enemy_faction: FactionData, enemy_zones: Array, count
 		unit.global_position = Vector3(base_pos.x + ox, 1.1, base_pos.z + oz)
 
 func _spawn_walls(enemy_zones: Array) -> void:
-	var wall_shape := BoxShape3D.new()
-	wall_shape.size = Vector3(10.0, 2.0, 0.5)
 	for zone: Node3D in enemy_zones:
 		var c := zone.global_position
-		_place_wall_segment(wall_shape, Vector3(c.x,       c.y + 1.0, c.z + 6.0), 0.0)
-		_place_wall_segment(wall_shape, Vector3(c.x,       c.y + 1.0, c.z - 6.0), 0.0)
-		_place_wall_segment(wall_shape, Vector3(c.x + 6.0, c.y + 1.0, c.z),       90.0)
-		_place_wall_segment(wall_shape, Vector3(c.x - 6.0, c.y + 1.0, c.z),       90.0)
+		_place_wall_segment(Vector3(c.x,       c.y, c.z + 6.0), 0.0)
+		_place_wall_segment(Vector3(c.x,       c.y, c.z - 6.0), 0.0)
+		_place_wall_segment(Vector3(c.x + 6.0, c.y, c.z),       90.0)
+		_place_wall_segment(Vector3(c.x - 6.0, c.y, c.z),       90.0)
 
-func _place_wall_segment(shape: BoxShape3D, pos: Vector3, rot_y: float) -> void:
-	var body := StaticBody3D.new()
-	body.position = pos
-	body.rotation_degrees.y = rot_y
-
-	var mesh_inst := MeshInstance3D.new()
-	var box := BoxMesh.new()
-	box.size = Vector3(10.0, 2.0, 0.5)
-	mesh_inst.mesh = box
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.50, 0.45, 0.40)
-	mesh_inst.set_surface_override_material(0, mat)
-
-	var col := CollisionShape3D.new()
-	col.shape = shape
-
-	body.add_child(mesh_inst)
-	body.add_child(col)
-	_nav_region.add_child(body)
+func _place_wall_segment(pos: Vector3, rot_y: float) -> void:
+	var wall := WALL_SEGMENT_MODEL.instantiate()
+	if wall is Node3D:
+		var wall_node := wall as Node3D
+		wall_node.name = "LowPolyWallSegment"
+		wall_node.position = pos
+		wall_node.rotation_degrees.y = rot_y
+		wall_node.scale = Vector3(2.5, 1.35, 1.0)
+		_nav_region.add_child(wall_node)
+		return
+	wall.free()
 
 func _spawn_turret(enemy_faction: FactionData, enemy_zones: Array) -> void:
 	if enemy_zones.is_empty():

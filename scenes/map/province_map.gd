@@ -14,6 +14,10 @@ const HEX_H := HEX_RADIUS * 2.0
 var tile_nodes: Dictionary = {}
 var _info_panel: Control = null
 var _game_over: bool = false
+var _gameplay_started: bool = false
+var _main_menu_layer: CanvasLayer = null
+var _pause_layer: CanvasLayer = null
+var _end_screen_layer: CanvasLayer = null
 
 # ─── Commander state ──────────────────────────────────────────────────────────
 var _commander_tokens:     Dictionary = {}
@@ -39,9 +43,11 @@ func _ready() -> void:
 	EventBus.commander_spawned.connect(_on_commander_spawned)
 	EventBus.commander_destroyed.connect(_on_commander_destroyed)
 	EventBus.battle_choice_needed.connect(_on_battle_choice_needed)
+	EventBus.pause_menu_requested.connect(_on_pause_menu_requested)
 
 	if BattleContext.returning_from_battle:
 		BattleContext.returning_from_battle = false
+		_gameplay_started = true
 		for tile in tile_nodes.values():
 			(tile as ProvinceT).refresh()
 		_spawn_commanders()
@@ -51,9 +57,25 @@ func _ready() -> void:
 		else:
 			TurnManager.resume_after_battle()
 		TurnManager.refresh_hud()
+	elif GameManager.skip_main_menu_once:
+		GameManager.skip_main_menu_once = false
+		_start_gameplay()
 	else:
-		TurnManager.start_game()
-		_spawn_commanders()
+		_show_main_menu()
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventKey:
+		var key_event := event as InputEventKey
+		if key_event.pressed and not key_event.echo and key_event.keycode == KEY_ESCAPE:
+			if _game_over or not _gameplay_started or _main_menu_layer != null:
+				return
+			_toggle_pause_menu()
+			get_viewport().set_input_as_handled()
+
+func _on_pause_menu_requested() -> void:
+	if _game_over or not _gameplay_started or _main_menu_layer != null:
+		return
+	_toggle_pause_menu()
 
 func _build_grid() -> void:
 	for y in ProvinceGrid.GRID_H:
@@ -87,6 +109,128 @@ func _build_ui() -> void:
 	var dip := DIPLOMACY_PANEL_SCN.instantiate()
 	ui_layer.add_child(dip)
 
+# ─── Menu / overlay UX ────────────────────────────────────────────────────────
+func _start_gameplay() -> void:
+	if _gameplay_started:
+		return
+	_gameplay_started = true
+	_hide_main_menu()
+	TurnManager.start_game()
+	_spawn_commanders()
+	TurnManager.refresh_hud()
+
+func _show_main_menu() -> void:
+	if _main_menu_layer != null:
+		return
+	_main_menu_layer = _build_menu_layer(
+		1,
+		"ISLAND CONQUEST",
+		"Command your faction across the island. Capture provinces, manage resources, and outlast rival commanders.",
+		[
+			{"text": "Start New Game", "callback": _start_gameplay},
+			{"text": "Quit", "callback": func(): get_tree().quit()},
+		]
+	)
+	add_child(_main_menu_layer)
+
+func _hide_main_menu() -> void:
+	if _main_menu_layer == null:
+		return
+	_main_menu_layer.queue_free()
+	_main_menu_layer = null
+
+func _toggle_pause_menu() -> void:
+	if _pause_layer == null:
+		_show_pause_menu()
+	else:
+		_hide_pause_menu()
+
+func _show_pause_menu() -> void:
+	if _pause_layer != null:
+		return
+	_deselect_commander()
+	_pause_layer = _build_menu_layer(
+		8,
+		"PAUSED",
+		"The campaign is waiting. Resume, restart with a fresh island, or exit the game.",
+		[
+			{"text": "Resume", "callback": _hide_pause_menu},
+			{"text": "New Game", "callback": _restart_without_menu},
+			{"text": "Quit", "callback": func(): get_tree().quit()},
+		]
+	)
+	add_child(_pause_layer)
+
+func _hide_pause_menu() -> void:
+	if _pause_layer == null:
+		return
+	_pause_layer.queue_free()
+	_pause_layer = null
+
+func _restart_without_menu() -> void:
+	GameManager.skip_main_menu_once = true
+	get_tree().reload_current_scene()
+
+func _build_menu_layer(layer_index: int, title_text: String, body_text: String, buttons: Array) -> CanvasLayer:
+	var layer := CanvasLayer.new()
+	layer.layer = layer_index
+
+	var bg := ColorRect.new()
+	bg.color = Color(0.0, 0.0, 0.0, 0.76)
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.mouse_filter = Control.MOUSE_FILTER_STOP
+	layer.add_child(bg)
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(center)
+
+	var card := PanelContainer.new()
+	center.add_child(card)
+
+	var margin := MarginContainer.new()
+	for side in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
+		margin.add_theme_constant_override(side, 46)
+	card.add_child(margin)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 16)
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	margin.add_child(vbox)
+
+	var title := Label.new()
+	title.text = title_text
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 44)
+	title.add_theme_color_override("font_color", Color(0.95, 0.82, 0.28))
+	vbox.add_child(title)
+
+	var body := Label.new()
+	body.text = body_text
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.custom_minimum_size = Vector2(420, 0)
+	body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	body.add_theme_font_size_override("font_size", 15)
+	body.add_theme_color_override("font_color", Color(0.78, 0.80, 0.84))
+	vbox.add_child(body)
+
+	var sep := HSeparator.new()
+	sep.add_theme_color_override("color", Color(1, 1, 1, 0.12))
+	vbox.add_child(sep)
+
+	for spec in buttons:
+		var btn := Button.new()
+		btn.text = spec.get("text", "Button")
+		btn.custom_minimum_size = Vector2(220, 44)
+		btn.pressed.connect(spec.get("callback"))
+		vbox.add_child(btn)
+
+	return layer
+
+func _is_interaction_locked() -> bool:
+	return _game_over or not _gameplay_started or _pause_layer != null or _main_menu_layer != null
+
 # ─── Commander spawning ───────────────────────────────────────────────────────
 func _spawn_commanders() -> void:
 	for commander in TurnManager.commanders:
@@ -108,7 +252,7 @@ func _token_pos(coord: Vector2i) -> Vector2:
 
 # ─── Commander selection / movement / attack ──────────────────────────────────
 func _on_token_clicked(commander: CommanderData) -> void:
-	if _game_over:
+	if _is_interaction_locked():
 		return
 	if commander.owner_faction != TurnManager.FACTION_PLAYER:
 		return
@@ -191,7 +335,7 @@ func _declare_attack(target_hex: Vector2i) -> void:
 
 # ─── Tile input handlers ──────────────────────────────────────────────────────
 func _on_tile_clicked(province: ProvinceData, tile_terrain: ProvinceData.TerrainType, coord: Vector2i) -> void:
-	if _game_over:
+	if _is_interaction_locked():
 		return
 	if _selected_commander != null:
 		if coord in _highlighted_attack_hexes:
@@ -207,6 +351,8 @@ func _on_tile_clicked(province: ProvinceData, tile_terrain: ProvinceData.Terrain
 		_info_panel.show_province(province, tile_terrain, coord, false)
 
 func _on_tile_right_clicked(province: ProvinceData, tile_terrain: ProvinceData.TerrainType, coord: Vector2i) -> void:
+	if _is_interaction_locked():
+		return
 	_deselect_commander()
 	_info_panel.show_province(province, tile_terrain, coord, true)
 
@@ -266,21 +412,23 @@ func _trigger_game_over(player_won: bool, reason: String) -> void:
 	_show_end_screen(player_won, reason)
 
 func _show_end_screen(player_won: bool, reason: String) -> void:
-	var layer := CanvasLayer.new()
-	layer.layer = 10
-	add_child(layer)
+	if _end_screen_layer != null:
+		return
+	_end_screen_layer = CanvasLayer.new()
+	_end_screen_layer.layer = 10
+	add_child(_end_screen_layer)
 
 	# Semi-transparent background — blocks all clicks on the map below
 	var bg := ColorRect.new()
 	bg.color = Color(0.0, 0.0, 0.0, 0.78)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_STOP
-	layer.add_child(bg)
+	_end_screen_layer.add_child(bg)
 
 	var center := CenterContainer.new()
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	layer.add_child(center)
+	_end_screen_layer.add_child(center)
 
 	var card := PanelContainer.new()
 	center.add_child(card)
@@ -317,14 +465,14 @@ func _show_end_screen(player_won: bool, reason: String) -> void:
 	var btn := Button.new()
 	btn.text = "New Game"
 	btn.custom_minimum_size = Vector2(180, 46)
-	btn.pressed.connect(func(): get_tree().reload_current_scene())
+	btn.pressed.connect(_restart_without_menu)
 	vbox.add_child(btn)
 
 # ─── Battle choice dialog ─────────────────────────────────────────────────────
 const BATTLE_ATTACK_STRENGTH := 5
 
 func _on_battle_choice_needed(province: ProvinceData, is_defense: bool, attacker: FactionData) -> void:
-	if _game_over:
+	if _is_interaction_locked():
 		return
 	var garrison: int = ProvinceGrid.get_province_garrison(province)
 

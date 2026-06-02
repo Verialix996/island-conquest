@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://nlkjajgeoycy" path="res://scenes/weapons/weapon_base.gd" id="1_v4xn6"]
 [ext_resource type="AudioStream" uid="uid://bddav344wf6dq" path="res://assets/sounds/gunshot.wav" id="2_uvw4m"]
+[ext_resource type="PackedScene" path="res://assets/models/weapons/weapon_pistol_model.tscn" id="3_qrs2v"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_v4xn6"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
@@ -33,6 +34,8 @@ damage = 15.0
 mag_size = 12
 max_mags = 999
 unlimited_mags = true
+
+[node name="Model" parent="." instance=ExtResource("3_qrs2v")]
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1163499361]
 environment = SubResource("Environment_omet7")

@@ -1,8 +1,11 @@
 extends Node
 
 # Polls every 2 seconds.
-# Win:  all living enemies dead AND no enemy-owned zones remain.
+# Win: all living factions at war with the player are dead AND no hostile zones remain.
 # Lose: handled by player._on_died() when player tickets run out.
+
+const FACTION_PLAYER = preload("res://scripts/resources/faction_player.tres")
+const DEBUG_LOGS := false
 
 var _timer: float = 2.0
 var _finished: bool = false
@@ -17,34 +20,54 @@ func _process(delta: float) -> void:
 	_check_conditions()
 
 func _check_conditions() -> void:
-	print("[BWD] _check_conditions fired")
+	_debug_log("_check_conditions fired")
 
-	# Enemy count — only non-player-faction units count as enemies
-	var all_enemies: Array[Node] = get_tree().get_nodes_in_group("enemy")
 	var living_enemies: int = 0
-	for e in all_enemies:
-		var dead = e.get("is_dead")
-		var faction = e.get("faction")
-		var is_hostile: bool = faction == null or not faction.get("is_player_faction")
-		print("[BWD]   enemy %s  is_dead=%s  faction=%s  hostile=%s" % [e.name, str(dead), str(faction), str(is_hostile)])
-		if not dead and is_hostile:
-			living_enemies += 1
-	print("[BWD] living_enemies=%d / total=%d" % [living_enemies, all_enemies.size()])
+	for faction in TurnManager.get_all_factions():
+		var hostile_faction := faction as FactionData
+		if not _is_hostile_to_player(hostile_faction):
+			continue
+		var group_name := _faction_group_name(hostile_faction)
+		for unit in get_tree().get_nodes_in_group(group_name):
+			if _is_living_combat_unit(unit):
+				living_enemies += 1
+				_debug_log("  hostile unit %s faction=%s" % [unit.name, hostile_faction.faction_name])
+	_debug_log("living hostile units=%d" % living_enemies)
 
-	# Zone count
-	var all_zones: Array[Node] = get_tree().get_nodes_in_group("battle_zone")
-	print("[BWD] battle_zone group has %d zones" % all_zones.size())
 	var enemy_zones: int = 0
+	var all_zones: Array[Node] = get_tree().get_nodes_in_group("battle_zone")
+	_debug_log("battle_zone group has %d zones" % all_zones.size())
 	for z in all_zones:
-		var faction = z.get("owner_faction")
-		var faction_name = faction.faction_name if faction != null else "null"
-		var is_player = faction.get("is_player_faction") if faction != null else "n/a"
-		print("[BWD]   zone %s  owner=%s  is_player=%s" % [z.name, faction_name, str(is_player)])
-		if faction != null and not faction.get("is_player_faction"):
+		var zone_owner: FactionData = z.get("owner_faction")
+		var faction_name = zone_owner.faction_name if zone_owner != null else "null"
+		var hostile = _is_hostile_to_player(zone_owner)
+		_debug_log("  zone %s owner=%s hostile=%s" % [z.name, faction_name, str(hostile)])
+		if hostile:
 			enemy_zones += 1
-	print("[BWD] enemy_zones=%d  living_enemies=%d" % [enemy_zones, living_enemies])
+	_debug_log("hostile_zones=%d living_hostiles=%d" % [enemy_zones, living_enemies])
 
 	if living_enemies == 0 and enemy_zones == 0 and not _finished:
-		print("[BWD] WIN condition met — calling finish_battle(true)")
+		_debug_log("WIN condition met — calling finish_battle(true)")
 		_finished = true
 		BattleContext.finish_battle(true)
+
+func _debug_log(message: String) -> void:
+	if DEBUG_LOGS:
+		print("[BWD] %s" % message)
+
+func _is_living_combat_unit(unit: Node) -> bool:
+	if unit == null or not is_instance_valid(unit):
+		return false
+	if not unit.has_method("take_damage"):
+		return false
+	if "is_dead" in unit and unit.is_dead:
+		return false
+	return true
+
+func _is_hostile_to_player(faction: FactionData) -> bool:
+	return faction != null and DiplomacyManager.are_at_war(FACTION_PLAYER, faction)
+
+func _faction_group_name(faction_data: FactionData) -> String:
+	if faction_data == null:
+		return "faction_unknown"
+	return "faction_" + faction_data.faction_name.to_lower().replace(" ", "_")

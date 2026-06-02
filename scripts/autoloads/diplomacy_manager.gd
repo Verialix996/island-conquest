@@ -1,6 +1,7 @@
 extends Node
 
 enum Relation { PEACE, WAR, ALLIANCE, TRADE_PACT, VASSALAGE }
+enum ProposalType { CEASEFIRE, ALLIANCE, TRADE_PACT, VASSALAGE }
 
 const FACTION_BARBARIAN = preload("res://scripts/resources/faction_barbarian.tres")
 
@@ -8,6 +9,8 @@ const FACTION_BARBARIAN = preload("res://scripts/resources/faction_barbarian.tre
 # so get_relation(A,B) == get_relation(B,A) always.
 var _relations: Dictionary = {}
 var _overlords: Dictionary = {} # vassal faction_name -> FactionData
+var _messages: Array[Dictionary] = []
+var _next_message_id: int = 1
 
 # ─── Public API ────────────────────────────────────────────────────────────────
 func get_relation(a: FactionData, b: FactionData) -> int:
@@ -59,6 +62,81 @@ func propose_alliance(initiator: FactionData, target: FactionData) -> void:
 
 func propose_trade_pact(initiator: FactionData, target: FactionData) -> void:
 	set_relation(initiator, target, Relation.TRADE_PACT)
+
+func send_proposal(sender: FactionData, recipient: FactionData, proposal_type: int, note: String = "") -> Dictionary:
+	if sender == null or recipient == null or sender == recipient:
+		return {}
+	if sender == FACTION_BARBARIAN or recipient == FACTION_BARBARIAN:
+		return {}
+	var existing := _find_pending_proposal(sender, recipient, proposal_type)
+	if not existing.is_empty():
+		return existing
+	var message := {
+		"id": _next_message_id,
+		"sender": sender,
+		"recipient": recipient,
+		"type": proposal_type,
+		"title": proposal_title(proposal_type),
+		"body": note if note != "" else proposal_body(sender, recipient, proposal_type),
+		"round": TurnManager.current_round,
+		"resolved": false,
+		"accepted": false
+	}
+	_next_message_id += 1
+	_messages.append(message)
+	EventBus.diplomatic_message_sent.emit(message)
+	return message
+
+func respond_to_proposal(message_id: int, accepted: bool) -> bool:
+	for i in _messages.size():
+		var message: Dictionary = _messages[i]
+		if int(message.get("id", -1)) != message_id or bool(message.get("resolved", false)):
+			continue
+		message["resolved"] = true
+		message["accepted"] = accepted
+		_messages[i] = message
+		if accepted:
+			_apply_proposal(message)
+		EventBus.diplomatic_proposal_resolved.emit(message, accepted)
+		return true
+	return false
+
+func get_messages_for(faction: FactionData) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for message: Dictionary in _messages:
+		if message.get("recipient", null) == faction:
+			result.append(message)
+	return result
+
+func get_pending_messages_for(faction: FactionData) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for message: Dictionary in _messages:
+		if message.get("recipient", null) == faction and not bool(message.get("resolved", false)):
+			result.append(message)
+	return result
+
+func proposal_title(proposal_type: int) -> String:
+	match proposal_type:
+		ProposalType.CEASEFIRE: return "Ceasefire Offer"
+		ProposalType.ALLIANCE: return "Alliance Proposal"
+		ProposalType.TRADE_PACT: return "Trade Pact Proposal"
+		ProposalType.VASSALAGE: return "Vassalage Demand"
+		_: return "Diplomatic Message"
+
+func proposal_body(sender: FactionData, recipient: FactionData, proposal_type: int) -> String:
+	var sender_name := sender.faction_name if sender != null else "Unknown"
+	var recipient_name := recipient.faction_name if recipient != null else "Unknown"
+	match proposal_type:
+		ProposalType.CEASEFIRE:
+			return sender_name + " asks " + recipient_name + " to end the war and restore peace."
+		ProposalType.ALLIANCE:
+			return sender_name + " wants a military alliance against common rivals."
+		ProposalType.TRADE_PACT:
+			return sender_name + " offers a trade pact for extra trade income each turn."
+		ProposalType.VASSALAGE:
+			return sender_name + " demands that " + recipient_name + " become a vassal and pay tribute."
+		_:
+			return sender_name + " sends a diplomatic message."
 
 func set_relation(a: FactionData, b: FactionData, relation: int) -> void:
 	if a == null or b == null or a == b:
@@ -183,6 +261,8 @@ func exchange_trade(faction: FactionData, target_resource: String) -> bool:
 func reset_state() -> void:
 	_relations.clear()
 	_overlords.clear()
+	_messages.clear()
+	_next_message_id = 1
 
 func get_enemies(faction: FactionData, all_factions: Array) -> Array:
 	var result := []
@@ -211,3 +291,24 @@ func _count_seed_provinces(faction: FactionData) -> int:
 		if ProvinceGrid.get_hex_owner(p.seed_hex) == faction:
 			count += 1
 	return count
+
+func _find_pending_proposal(sender: FactionData, recipient: FactionData, proposal_type: int) -> Dictionary:
+	for message: Dictionary in _messages:
+		if bool(message.get("resolved", false)):
+			continue
+		if message.get("sender", null) == sender and message.get("recipient", null) == recipient and int(message.get("type", -1)) == proposal_type:
+			return message
+	return {}
+
+func _apply_proposal(message: Dictionary) -> void:
+	var sender: FactionData = message.get("sender", null)
+	var recipient: FactionData = message.get("recipient", null)
+	match int(message.get("type", -1)):
+		ProposalType.CEASEFIRE:
+			offer_peace(recipient, sender)
+		ProposalType.ALLIANCE:
+			propose_alliance(recipient, sender)
+		ProposalType.TRADE_PACT:
+			propose_trade_pact(recipient, sender)
+		ProposalType.VASSALAGE:
+			start_vassalage(recipient, sender)

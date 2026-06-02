@@ -21,7 +21,7 @@ The world is a randomly generated continent divided into provinces. Multiple AI 
 - **Building system** — Barracks, Wall, Turret, Energy Plant per hex; each has physical battlefield effects
 - **Faction traits** — 10-trait pool (Aggressive, Expansionist, Builder, Militarist, Pacifist, etc.); 3 randomly assigned per AI faction at game start; drive all AI behaviour
 - **Full faction simulation** — 5 factions with BFS expansion, trait-driven war/peace/building decisions, and event-driven AI
-- **Diplomacy** — war, peace, alliance; player diplomacy panel; AI peace offers based on faction traits
+- **Diplomacy** — war, peace, ceasefire offers, alliance, trade pact, and vassalage states; player diplomacy panel with AI proposal messages
 - **Battle transition** — map attack → 3D shooter scene → result applied back to map
 - **Ticket-based respawn** — base 10 tickets per side + commander army strength; building effects modify further
 - **Trade exchange** — spend 2 trade resources to gain 1 of any other resource via Map HUD
@@ -88,8 +88,8 @@ Voronoi hex map, turn manager, resource system, province info panel, commander t
 ### ✅ Milestone 8 — Full Faction Simulation
 Faction traits, commander armies, building battlefield effects, commander defeat/retreat flow, trade exchange UI, trait-driven AI war/peace/expansion/building, event log.
 
-### Milestone 9 — Full Diplomacy
-Player diplomatic messages, treaties (ceasefire / alliance / trade / vassalage), faction agendas (expansionist / isolationist / opportunist), betrayal, coalition building, faction collapse. Begin replacing placeholder art with Blender low-poly models.
+### ✅ Milestone 9 — Full Diplomacy
+Player diplomatic messages with accept/reject handling, treaties (ceasefire / alliance / trade / vassalage), faction agendas (expansionist / isolationist / opportunist), betrayal, coalition building, faction collapse, and first-pass low-poly model replacements.
 
 ### Milestone 10 — Polish & Release
 Full art and sound pass, main menu, pause menu, game over screen, map territory overview, performance pass, Windows build export, Steam / itch.io release.

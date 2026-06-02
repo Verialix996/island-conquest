@@ -44,12 +44,9 @@ func _process(delta: float) -> void:
 	for body in bodies_in_zone:
 		if not is_instance_valid(body):
 			continue
-		var body_faction: FactionData = null
+		var body_faction: FactionData = _get_body_faction(body)
 		if body.is_in_group("player"):
 			player = body
-			body_faction = player_faction
-		elif body.is_in_group("enemy") and not body.is_dead:
-			body_faction = body.get("faction")
 		if body_faction != null:
 			faction_counts[body_faction] = faction_counts.get(body_faction, 0) + 1
 
@@ -65,7 +62,7 @@ func _process(delta: float) -> void:
 		elif faction_counts[f] == max_count:
 			dominant_faction = null  # tie, contested
 
-	if dominant_faction != null and dominant_faction != owner_faction:
+	if dominant_faction != null and dominant_faction != owner_faction and _can_capture(dominant_faction, owner_faction):
 		capture_progress += delta
 		if capture_progress >= capture_time:
 			capture_progress = 0.0
@@ -108,6 +105,27 @@ func _try_spawn_unit() -> void:
 	var offset = Vector3(randf_range(-3.0, 3.0), 0.0, randf_range(-3.0, 3.0))
 	unit.global_position = Vector3(global_position.x + offset.x, 1.1, global_position.z + offset.z)
 	spawned_units.append(unit)
+
+func _can_capture(attacker: FactionData, defender: FactionData) -> bool:
+	if attacker == null:
+		return false
+	if defender == null:
+		return true
+	return DiplomacyManager.are_at_war(attacker, defender)
+
+func _get_body_faction(body: Node) -> FactionData:
+	if body == null:
+		return null
+	if "is_dead" in body and body.is_dead:
+		return null
+	if body.has_method("get_faction"):
+		return body.get_faction()
+	var body_faction: FactionData = body.get("faction")
+	if body_faction != null:
+		return body_faction
+	if body.is_in_group("player"):
+		return player_faction
+	return null
 
 func _resupply(player: Node3D) -> void:
 	if player.has_method("heal"):

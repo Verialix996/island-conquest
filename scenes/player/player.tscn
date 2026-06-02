@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://clup8btwwqpeq" path="res://scenes/weapons/weapon_shotgun.tscn" id="4_lvxji"]
 [ext_resource type="PackedScene" uid="uid://cv77uh1qgimdq" path="res://scenes/weapons/weapon_rifle.tscn" id="5_75vfm"]
 [ext_resource type="Script" uid="uid://b88k4iy1p66m3" path="res://scripts/components/health_component.gd" id="5_p47bc"]
+[ext_resource type="PackedScene" path="res://assets/models/units/low_poly_soldier_player.tscn" id="6_73e4d"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_x7p2l"]
 albedo_color = Color(0.2065363, 0.49325317, 9.62615e-08, 1)
@@ -21,23 +22,22 @@ albedo_color = Color(0.20784314, 0.49411765, 0, 1)
 [node name="Player" type="CharacterBody3D" unique_id=378423886 groups=["player"]]
 script = ExtResource("1_8afob")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=967385355]
-mesh = SubResource("CapsuleMesh_8afob")
-surface_material_override/0 = SubResource("StandardMaterial3D_gmlin")
+[node name="Model" parent="." instance=ExtResource("6_73e4d")]
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=2067336665]
 shape = SubResource("CapsuleShape3D_dovo2")
 
 [node name="Pistol" parent="." unique_id=153327082 instance=ExtResource("2_dovo2")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.53015584)
+transform = Transform3D(0.81915206, 0, 0.57357645, 0, 1, 0, -0.57357645, 0, 0.81915206, 0.34, 1.1, -0.42)
 
 [node name="HitSound" type="AudioStreamPlayer3D" parent="." unique_id=1324445993]
 stream = ExtResource("3_gmlin")
 
 [node name="Shotgun" parent="." unique_id=534391030 instance=ExtResource("4_lvxji")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.51347566)
+transform = Transform3D(0.9659258, 0, 0.25881904, 0, 1, 0, -0.25881904, 0, 0.9659258, 0.48, 1.18, -0.58)
 
 [node name="Rifle" parent="." unique_id=1967543141 instance=ExtResource("5_75vfm")]
+transform = Transform3D(0.9659258, 0, 0.25881904, 0, 1, 0, -0.25881904, 0, 0.9659258, 0.5, 1.2, -0.72)
 
 [node name="HealthComponent" type="Node" parent="." unique_id=377475467]
 script = ExtResource("5_p47bc")

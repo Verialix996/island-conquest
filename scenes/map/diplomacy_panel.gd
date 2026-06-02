@@ -3,6 +3,7 @@ extends Control
 # _rows[FactionData] → labels/buttons for each diplomacy card
 var _rows: Dictionary = {}
 var _card: Control = null
+var _message_list: VBoxContainer = null
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -15,12 +16,14 @@ func _ready() -> void:
 	EventBus.peace_made.connect(func(_a, _b):   if visible: _refresh_rows())
 	EventBus.treaty_changed.connect(func(_a, _b, _r): if visible: _refresh_rows())
 	EventBus.vassalage_started.connect(func(_a, _b): if visible: _refresh_rows())
+	EventBus.diplomatic_message_sent.connect(func(_m): if visible: _refresh_messages())
+	EventBus.diplomatic_proposal_resolved.connect(func(_m, _a): if visible: _refresh_all())
 	EventBus.turn_started.connect(func(_f, _r): if visible: _refresh_rows())
 
 func _on_toggle() -> void:
 	visible = not visible
 	if visible:
-		_refresh_rows()
+		_refresh_all()
 
 # Click outside the card → close
 func _gui_input(event: InputEvent) -> void:
@@ -145,14 +148,29 @@ func _build_ui() -> void:
 
 	vbox.add_child(_sep())
 
+	var msg_header := Label.new()
+	msg_header.text = "Messages"
+	msg_header.add_theme_font_size_override("font_size", 14)
+	vbox.add_child(msg_header)
+
+	_message_list = VBoxContainer.new()
+	_message_list.add_theme_constant_override("separation", 6)
+	vbox.add_child(_message_list)
+
+	vbox.add_child(_sep())
+
 	var note := Label.new()
-	note.text = "Diplomacy costs 0 AP. Treaties resolve immediately."
+	note.text = "Diplomacy costs 0 AP. AI proposals appear as messages you can accept or reject."
 	note.add_theme_font_size_override("font_size", 11)
 	note.add_theme_color_override("font_color", Color(0.50, 0.50, 0.50))
 	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(note)
 
 # ─── Data ─────────────────────────────────────────────────────────────────────
+func _refresh_all() -> void:
+	_refresh_rows()
+	_refresh_messages()
+
 func _refresh_rows() -> void:
 	var player: FactionData = TurnManager.FACTION_PLAYER
 	var my_turn: bool = TurnManager.is_player_turn()
@@ -216,7 +234,63 @@ func _on_action_pressed(faction: FactionData, action: String) -> void:
 			DiplomacyManager.start_vassalage(faction, player)
 		"break":
 			DiplomacyManager.break_treaty(player, faction)
-	_refresh_rows()
+	_refresh_all()
+
+func _refresh_messages() -> void:
+	if _message_list == null:
+		return
+	for child in _message_list.get_children():
+		child.queue_free()
+	var messages: Array[Dictionary] = DiplomacyManager.get_pending_messages_for(TurnManager.FACTION_PLAYER)
+	if messages.is_empty():
+		var empty := Label.new()
+		empty.text = "No pending diplomatic messages."
+		empty.add_theme_font_size_override("font_size", 11)
+		empty.add_theme_color_override("font_color", Color(0.55, 0.58, 0.64))
+		_message_list.add_child(empty)
+		return
+	for message: Dictionary in messages:
+		_message_list.add_child(_build_message_row(message))
+
+func _build_message_row(message: Dictionary) -> Control:
+	var panel := PanelContainer.new()
+	var margin := MarginContainer.new()
+	for side in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
+		margin.add_theme_constant_override(side, 6)
+	panel.add_child(margin)
+
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	margin.add_child(row)
+
+	var sender: FactionData = message.get("sender", null)
+	var sender_name := sender.faction_name if sender != null else "Unknown"
+	var text := Label.new()
+	text.text = "%s: %s — %s" % [sender_name, str(message.get("title", "Message")), str(message.get("body", ""))]
+	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text.add_theme_font_size_override("font_size", 11)
+	row.add_child(text)
+
+	var message_id: int = int(message.get("id", -1))
+	var accept := Button.new()
+	accept.text = "Accept"
+	accept.custom_minimum_size = Vector2(70, 24)
+	accept.pressed.connect(func():
+		DiplomacyManager.respond_to_proposal(message_id, true)
+		_refresh_all()
+	)
+	row.add_child(accept)
+
+	var reject := Button.new()
+	reject.text = "Reject"
+	reject.custom_minimum_size = Vector2(70, 24)
+	reject.pressed.connect(func():
+		DiplomacyManager.respond_to_proposal(message_id, false)
+		_refresh_all()
+	)
+	row.add_child(reject)
+	return panel
 
 # ─── Helper ───────────────────────────────────────────────────────────────────
 func _sep() -> HSeparator:

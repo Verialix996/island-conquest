@@ -1,0 +1,36 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="Sand"]
+albedo_color = Color(0.58, 0.48, 0.31, 1)
+roughness = 0.95
+
+[sub_resource type="BoxMesh" id="Bag"]
+material = SubResource("Sand")
+size = Vector3(1.05, 0.32, 0.42)
+
+[sub_resource type="BoxShape3D" id="CoverShape"]
+size = Vector3(3.4, 0.75, 0.65)
+
+[node name="CoverSandbagWall" type="Node3D"]
+
+[node name="BagA" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.9848077, 0, -0.17364818, 0, 1, 0, 0.17364818, 0, 0.9848077, -1.05, 0.16, 0)
+mesh = SubResource("Bag")
+
+[node name="BagB" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.9961947, 0, 0.087155744, 0, 1, 0, -0.087155744, 0, 0.9961947, 0, 0.16, 0.05)
+mesh = SubResource("Bag")
+
+[node name="BagC" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.9848077, 0, -0.17364818, 0, 1, 0, 0.17364818, 0, 0.9848077, 1.05, 0.16, 0)
+mesh = SubResource("Bag")
+
+[node name="TopBag" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.9961947, 0, -0.087155744, 0, 1, 0, 0.087155744, 0, 0.9961947, 0, 0.48, 0)
+mesh = SubResource("Bag")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0)
+shape = SubResource("CoverShape")

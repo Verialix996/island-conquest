@@ -1,0 +1,24 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="Concrete"]
+albedo_color = Color(0.38, 0.39, 0.37, 1)
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="Wall"]
+material = SubResource("Concrete")
+size = Vector3(4.0, 1.45, 0.72)
+
+[sub_resource type="BoxShape3D" id="WallShape"]
+size = Vector3(4.0, 1.45, 0.72)
+
+[node name="WallSegmentLowPoly" type="Node3D"]
+
+[node name="Wall" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.72, 0)
+mesh = SubResource("Wall")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.72, 0)
+shape = SubResource("WallShape")

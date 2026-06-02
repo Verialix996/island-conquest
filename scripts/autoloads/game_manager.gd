@@ -8,6 +8,11 @@ var zones: Dictionary = {}
 
 var factions: Array[FactionData] = []
 
+# Set by menu/new-game UI before reloading the map scene so a player-requested
+# restart can jump straight into a fresh campaign instead of stopping on the
+# splash menu again.
+var skip_main_menu_once: bool = false
+
 func _ready() -> void:
 	EventBus.zone_captured.connect(_on_zone_captured)
 

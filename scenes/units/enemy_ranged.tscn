@@ -2,7 +2,7 @@
 
 [ext_resource type="PackedScene" uid="uid://bjxq6qeucgwg2" path="res://scenes/units/enemy_base.tscn" id="1_1phqv"]
 [ext_resource type="Script" uid="uid://doi5d0m4kvyxr" path="res://scenes/units/enemy_ranged.gd" id="2_w85hd"]
-[ext_resource type="Script" uid="uid://b88k4iy1p66m3" path="res://scripts/components/health_component.gd" id="3_w85hd"]
+[ext_resource type="PackedScene" path="res://assets/models/units/low_poly_infantry_ranged.tscn" id="4_j6k8m"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1hukp"]
 albedo_color = Color(0.5548993, 0.0005303046, 0.62441146, 1)
@@ -14,19 +14,12 @@ material = SubResource("StandardMaterial3D_1hukp")
 albedo_color = Color(0.5529412, 0, 0.62352943, 1)
 
 [node name="enemyRanged" unique_id=1477360822 instance=ExtResource("1_1phqv")]
-groups=["enemy"]
 script = ExtResource("2_w85hd")
 preferred_distance = 8.0
 shoot_range = 15.0
-shoot_damage = 10
 shoot_cooldown = 1.5
 
-[node name="MeshInstance3D" parent="." index="0" unique_id=364973635]
-mesh = SubResource("CapsuleMesh_56qeu")
-surface_material_override/0 = SubResource("StandardMaterial3D_mt7bm")
+[node name="MeleeModel" parent="." index="0"]
+visible = false
 
-[node name="ShootRay" type="RayCast3D" parent="." index="5" unique_id=626019497]
-target_position = Vector3(0, 0, -20)
-
-[node name="HealthComponent2" type="Node" parent="." index="6" unique_id=1955727376]
-script = ExtResource("3_w85hd")
+[node name="RangedModel" parent="." index="1" instance=ExtResource("4_j6k8m")]

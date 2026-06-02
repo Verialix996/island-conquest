@@ -1,0 +1,76 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="FactionPurple"]
+albedo_color = Color(0.5529412, 0, 0.62352943, 1)
+roughness = 0.82
+
+[sub_resource type="StandardMaterial3D" id="UniformDark"]
+albedo_color = Color(0.12, 0.14, 0.11, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="Skin"]
+albedo_color = Color(0.74, 0.56, 0.39, 1)
+roughness = 0.8
+
+[sub_resource type="StandardMaterial3D" id="MetalDark"]
+albedo_color = Color(0.08, 0.08, 0.085, 1)
+metallic = 0.15
+roughness = 0.65
+
+[sub_resource type="BoxMesh" id="Torso"]
+material = SubResource("FactionPurple")
+size = Vector3(0.68, 1.0, 0.44)
+
+[sub_resource type="BoxMesh" id="Head"]
+material = SubResource("Skin")
+size = Vector3(0.36, 0.32, 0.36)
+
+[sub_resource type="BoxMesh" id="Helmet"]
+material = SubResource("UniformDark")
+size = Vector3(0.44, 0.16, 0.44)
+
+[sub_resource type="BoxMesh" id="Arm"]
+material = SubResource("UniformDark")
+size = Vector3(0.18, 0.62, 0.20)
+
+[sub_resource type="BoxMesh" id="Leg"]
+material = SubResource("UniformDark")
+size = Vector3(0.22, 0.55, 0.24)
+
+[sub_resource type="BoxMesh" id="Rifle"]
+material = SubResource("MetalDark")
+size = Vector3(0.12, 0.14, 1.18)
+
+[node name="LowPolyInfantryRanged" type="Node3D"]
+
+[node name="FactionTintTorso" type="MeshInstance3D" parent="." groups=["faction_tint"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.04, 0)
+mesh = SubResource("Torso")
+
+[node name="Head" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.72, 0)
+mesh = SubResource("Head")
+
+[node name="Helmet" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.93, 0)
+mesh = SubResource("Helmet")
+
+[node name="LeftArm" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.9659258, 0, -0.25881904, 0, 1, 0, 0.25881904, 0, 0.9659258, -0.46, 1.08, -0.04)
+mesh = SubResource("Arm")
+
+[node name="RightArm" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.9659258, 0, 0.25881904, 0, 1, 0, -0.25881904, 0, 0.9659258, 0.46, 1.08, -0.04)
+mesh = SubResource("Arm")
+
+[node name="LeftLeg" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.17, 0.36, 0)
+mesh = SubResource("Leg")
+
+[node name="RightLeg" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.17, 0.36, 0)
+mesh = SubResource("Leg")
+
+[node name="RifleSilhouette" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.9659258, 0, 0.25881904, 0, 1, 0, -0.25881904, 0, 0.9659258, 0.44, 1.15, -0.48)
+mesh = SubResource("Rifle")

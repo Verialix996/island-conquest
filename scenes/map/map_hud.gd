@@ -36,6 +36,8 @@ func _ready() -> void:
 	EventBus.vassalage_started.connect(_on_vassalage_started)
 	EventBus.tribute_paid.connect(_on_tribute_paid)
 	EventBus.faction_collapsed.connect(_on_faction_collapsed)
+	EventBus.diplomatic_message_sent.connect(_on_diplomatic_message_sent)
+	EventBus.diplomatic_proposal_resolved.connect(_on_diplomatic_proposal_resolved)
 	EventBus.hex_captured.connect(_on_hex_captured)
 	EventBus.round_ended.connect(_on_round_ended)
 	EventBus.commander_spawned.connect(_on_commander_spawned)
@@ -93,6 +95,12 @@ func _build_ui() -> void:
 	trade_btn.custom_minimum_size = Vector2(70, 26)
 	trade_btn.pressed.connect(_toggle_trade_popup)
 	left.add_child(trade_btn)
+
+	var menu_btn := Button.new()
+	menu_btn.text = "Menu"
+	menu_btn.custom_minimum_size = Vector2(70, 26)
+	menu_btn.pressed.connect(func(): EventBus.pause_menu_requested.emit())
+	left.add_child(menu_btn)
 
 	_build_trade_popup()
 
@@ -338,6 +346,23 @@ func _on_tribute_paid(vassal: FactionData, overlord: FactionData) -> void:
 func _on_faction_collapsed(faction: FactionData, conqueror: FactionData) -> void:
 	_log(faction.faction_name + " collapsed under " + conqueror.faction_name + ".",
 		Color(0.80, 0.45, 1.0))
+
+func _on_diplomatic_message_sent(message: Dictionary) -> void:
+	if message.get("recipient", null) != TurnManager.FACTION_PLAYER:
+		return
+	var sender: FactionData = message.get("sender", null)
+	var sender_name := sender.faction_name if sender != null else "Unknown"
+	_log("Message from " + sender_name + ": " + str(message.get("title", "Diplomacy")),
+		Color(0.85, 0.75, 1.0))
+
+func _on_diplomatic_proposal_resolved(message: Dictionary, accepted: bool) -> void:
+	if message.get("recipient", null) != TurnManager.FACTION_PLAYER:
+		return
+	var sender: FactionData = message.get("sender", null)
+	var sender_name := sender.faction_name if sender != null else "Unknown"
+	var outcome := "accepted" if accepted else "rejected"
+	_log("You " + outcome + " " + sender_name + "'s " + str(message.get("title", "proposal")) + ".",
+		Color(0.85, 0.75, 1.0))
 
 func _on_hex_captured(coord: Vector2i, new_owner: FactionData, old_owner: FactionData) -> void:
 	if old_owner == null or new_owner == null:

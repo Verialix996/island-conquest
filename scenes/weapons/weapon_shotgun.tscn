@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://cukwsg4uyk5g2" path="res://scenes/weapons/weapon_shotgun.gd" id="1_n6gw3"]
 [ext_resource type="AudioStream" uid="uid://bddav344wf6dq" path="res://assets/sounds/gunshot.wav" id="2_q7m0i"]
+[ext_resource type="PackedScene" path="res://assets/models/weapons/weapon_shotgun_model.tscn" id="3_lnx72"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_v4xn6"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
@@ -32,6 +33,8 @@ script = ExtResource("1_n6gw3")
 fire_rate = 0.6
 mag_size = 8
 max_mags = 9
+
+[node name="Model" parent="." instance=ExtResource("3_lnx72")]
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1163499361]
 environment = SubResource("Environment_omet7")

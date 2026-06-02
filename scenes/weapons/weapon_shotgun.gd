@@ -25,3 +25,29 @@ func fire() -> void:
 			spawn_tracer(origin, result.position)
 		else:
 			spawn_tracer(origin, end)
+
+func ai_fire(shooter_faction: FactionData) -> bool:
+	if not _consume_ai_round():
+		return false
+	muzzle_flash.restart()
+	gunshot_sound.play()
+
+	for i in pellet_count:
+		var angle = deg_to_rad(randf_range(-spread_angle, spread_angle))
+		var spread_dir = Vector3(sin(angle), 0, -cos(angle))
+		var world_dir = global_transform.basis * spread_dir
+
+		var space_state = get_world_3d().direct_space_state
+		var origin = global_position
+		var end = origin + world_dir * 20.0
+		var query = PhysicsRayQueryParameters3D.create(origin, end)
+		query.exclude = [get_parent()]
+		var result = space_state.intersect_ray(query)
+
+		if result:
+			if _can_damage_ai_hit(shooter_faction, result.collider):
+				result.collider.take_damage(damage, hit_chance_modifiers)
+			spawn_tracer(origin, result.position)
+		else:
+			spawn_tracer(origin, end)
+	return true

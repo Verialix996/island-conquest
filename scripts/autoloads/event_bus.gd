@@ -64,6 +64,12 @@ signal tribute_paid(vassal: FactionData, overlord: FactionData)
 @warning_ignore("unused_signal")
 signal faction_collapsed(faction: FactionData, conqueror: FactionData)
 @warning_ignore("unused_signal")
+signal diplomatic_message_sent(message: Dictionary)
+@warning_ignore("unused_signal")
+signal diplomatic_proposal_resolved(message: Dictionary, accepted: bool)
+@warning_ignore("unused_signal")
 signal diplomacy_panel_toggled
+@warning_ignore("unused_signal")
+signal pause_menu_requested
 @warning_ignore("unused_signal")
 signal battle_choice_needed(province: ProvinceData, is_defense: bool, attacker: FactionData)
